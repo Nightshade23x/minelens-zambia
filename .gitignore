@@ -1,0 +1,28 @@
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environment variables
+.env
+
+# VS Code
+.vscode/
+
+# Raw / processed datasets
+data/raw/*
+data/processed/*
+
+# Keep empty data directories in Git
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
