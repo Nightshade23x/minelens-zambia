@@ -1,1 +1,119 @@
-[]
+[
+    {
+        "id": "q001",
+        "query": "copper production",
+        "relevant_chunks": [
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00017"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00020"
+            }
+        ],
+        "description": "Copper production discussion and production figures"
+    },
+    {
+        "id": "q002",
+        "query": "gold production",
+        "relevant_chunks": [
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00018"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00020"
+            }
+        ],
+        "description": "Gold production trends and figures"
+    },
+    {
+        "id": "q003",
+        "query": "mining sector GDP",
+        "relevant_chunks": [
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00013"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00015"
+            }
+        ],
+        "description": "Mining sector contribution to real GDP growth"
+    },
+    {
+        "id": "q004",
+        "query": "mining employment",
+        "relevant_chunks": [
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00014"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00033"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00034"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00035"
+            }
+        ],
+        "description": "Employment levels and trends in the mining sector"
+    },
+    {
+        "id": "q005",
+        "query": "how many people work in mines",
+        "relevant_chunks": [
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00014"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00033"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00034"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00035"
+            }
+        ],
+        "description": "Natural-language paraphrase of mining employment"
+    },
+    {
+        "id": "q006",
+        "query": "mining licences",
+        "relevant_chunks": [
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00031"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00032"
+            }
+        ],
+        "description": "Mining and exploration licence statistics"
+    },
+    {
+        "id": "q007",
+        "query": "workplace accidents in mines",
+        "relevant_chunks": [
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00036"
+            }
+        ],
+        "description": "Mining workplace accidents and fatalities"
+    }
+]
