@@ -29,3 +29,6 @@ Thumbs.db
 
 # Local ML models and caches
 .cache/
+
+# Local evaluation/debug logs
+logs/

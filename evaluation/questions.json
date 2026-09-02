@@ -1,6 +1,7 @@
 [
     {
         "id": "q001",
+        "category": "statistics",
         "query": "copper production",
         "relevant_chunks": [
             {
@@ -16,6 +17,7 @@
     },
     {
         "id": "q002",
+        "category": "statistics",
         "query": "gold production",
         "relevant_chunks": [
             {
@@ -31,6 +33,7 @@
     },
     {
         "id": "q003",
+        "category": "economics",
         "query": "mining sector GDP",
         "relevant_chunks": [
             {
@@ -46,6 +49,7 @@
     },
     {
         "id": "q004",
+        "category": "employment",
         "query": "mining employment",
         "relevant_chunks": [
             {
@@ -69,6 +73,7 @@
     },
     {
         "id": "q005",
+        "category": "employment",
         "query": "how many people work in mines",
         "relevant_chunks": [
             {
@@ -92,6 +97,7 @@
     },
     {
         "id": "q006",
+        "category": "licensing",
         "query": "mining licences",
         "relevant_chunks": [
             {
@@ -107,6 +113,7 @@
     },
     {
         "id": "q007",
+        "category": "safety",
         "query": "workplace accidents in mines",
         "relevant_chunks": [
             {
@@ -115,5 +122,177 @@
             }
         ],
         "description": "Mining workplace accidents and fatalities"
+    },
+    {
+        "id": "q008",
+        "category": "licensing",
+        "query": "what information is required when applying for a mining right",
+        "relevant_chunks": [
+            {
+                "document": "zambia_application_for_mining_right_form_i.pdf",
+                "chunk_id": "chunk_00001"
+            },
+            {
+                "document": "zambia_application_for_mining_right_form_i.pdf",
+                "chunk_id": "chunk_00003"
+            },
+            {
+                "document": "zambia_application_for_mining_right_form_i.pdf",
+                "chunk_id": "chunk_00004"
+            }
+        ],
+        "description": "Information and supporting material required for a mining-right application"
+    },
+    {
+        "id": "q009",
+        "category": "fees",
+        "query": "how much does a large scale mining licence application cost",
+        "relevant_chunks": [
+            {
+                "document": "zambia_mining_rights_area_charges.pdf",
+                "chunk_id": "chunk_00001"
+            }
+        ],
+        "description": "Large-scale mining licence application fee"
+    },
+    {
+        "id": "q010",
+        "category": "fees",
+        "query": "how much does an exploration licence cost",
+        "relevant_chunks": [
+            {
+                "document": "zambia_mining_rights_area_charges.pdf",
+                "chunk_id": "chunk_00001"
+            },
+            {
+                "document": "zambia_mining_rights_area_charges.pdf",
+                "chunk_id": "chunk_00003"
+            }
+        ],
+        "description": "Exploration licence application fees and area charges"
+    },
+    {
+        "id": "q011",
+        "category": "critical_minerals",
+        "query": "which minerals are considered critical in Zambia",
+        "relevant_chunks": [
+            {
+                "document": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
+                "chunk_id": "chunk_00009"
+            },
+            {
+                "document": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
+                "chunk_id": "chunk_00018"
+            }
+        ],
+        "description": "Critical minerals identified and discussed in Zambia's strategy"
+    },
+    {
+        "id": "q012",
+        "category": "critical_minerals",
+        "query": "Zambia critical minerals strategy",
+        "relevant_chunks": [
+            {
+                "document": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
+                "chunk_id": "chunk_00001"
+            },
+            {
+                "document": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
+                "chunk_id": "chunk_00006"
+            }
+        ],
+        "description": "Identification and purpose of Zambia's National Critical Minerals Strategy"
+    },
+    {
+        "id": "q013",
+        "category": "value_addition",
+        "query": "mineral beneficiation and value addition",
+        "relevant_chunks": [
+            {
+                "document": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
+                "chunk_id": "chunk_00033"
+            },
+            {
+                "document": "zambia_national_mineral_resources_development_policy_2022.pdf",
+                "chunk_id": "chunk_00033"
+            },
+            {
+                "document": "zambia_annual_mining_statistical_bulletin_2024.pdf",
+                "chunk_id": "chunk_00041"
+            }
+        ],
+        "description": "Beneficiation, local processing and mineral value-addition policy"
+    },
+    {
+        "id": "q014",
+        "category": "policy",
+        "query": "government mining sector development policy",
+        "relevant_chunks": [
+            {
+                "document": "zambia_national_mineral_resources_development_policy_2022.pdf",
+                "chunk_id": "chunk_00003"
+            },
+            {
+                "document": "zambia_national_mineral_resources_development_policy_2022.pdf",
+                "chunk_id": "chunk_00004"
+            },
+            {
+                "document": "zambia_national_mineral_resources_development_policy_2022.pdf",
+                "chunk_id": "chunk_00026"
+            },
+            {
+                "document": "zambia_national_mineral_resources_development_policy_2022.pdf",
+                "chunk_id": "chunk_00040"
+            }
+        ],
+        "description": "Government policy, vision and implementation for development of the mining sector"
+    },
+    {
+        "id": "q015",
+        "category": "exploration",
+        "query": "mineral exploration targets",
+        "relevant_chunks": [
+            {
+                "document": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
+                "chunk_id": "chunk_00043"
+            },
+            {
+                "document": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
+                "chunk_id": "chunk_00044"
+            },
+            {
+                "document": "zambia_mining_monitoring_evaluation_plan_2022_2026.pdf",
+                "chunk_id": "chunk_00034"
+            }
+        ],
+        "description": "Targets for geological mapping, mineral exploration and exploratory drilling"
+    },
+    {
+        "id": "q016",
+        "category": "licensing",
+        "query": "mining rights issued to citizens",
+        "relevant_chunks": [
+            {
+                "document": "zambia_mining_monitoring_evaluation_plan_2022_2026.pdf",
+                "chunk_id": "chunk_00034"
+            }
+        ],
+        "description": "Target for issuance of mining rights to Zambian citizens"
+    },
+    {
+        "id": "q017",
+        "category": "investment",
+        "query": "Zambia mining investment policy",
+        "relevant_chunks": [
+            {
+                "document": "zambia_national_mineral_resources_development_policy_2022.pdf",
+                "chunk_id": "chunk_00007"
+            },
+            {
+                "document": "zambia_national_mineral_resources_development_policy_2022.pdf",
+                "chunk_id": "chunk_00011"
+            }
+        ],
+        "description": "Mining policy measures relating to investment and opening new mining areas"
     }
 ]
