@@ -9,7 +9,7 @@ import numpy as np
 from fastembed import TextEmbedding
 
 from app.search import load_chunks, make_snippet
-
+import hashlib
 
 # ---------------------------------------------------------
 # Project paths
@@ -46,7 +46,47 @@ DEFAULT_TOP_K = 5
 # ---------------------------------------------------------
 # Vector helpers
 # ---------------------------------------------------------
+def chunk_text_sha256(
+    text: str,
+) -> str:
+    """
+    Return a stable SHA-256 hash of the exact text
+    used to create an embedding.
+    """
 
+    return hashlib.sha256(
+        text.encode(
+            "utf-8"
+        )
+    ).hexdigest()
+def chunk_cache_identity(
+    chunk: dict,
+) -> dict:
+    """
+    Return the information that uniquely identifies
+    the exact chunk text used for an embedding.
+
+    This is used for both saving and validating the
+    embedding cache.
+    """
+
+    return {
+        "document": chunk.get(
+            "document"
+        ),
+        "chunk_id": chunk.get(
+            "chunk_id"
+        ),
+        "document_sha256": chunk.get(
+            "document_sha256"
+        ),
+        "text_sha256": chunk_text_sha256(
+            chunk.get(
+                "text",
+                ""
+            )
+        ),
+    }
 def normalize_vector(
     vector: np.ndarray,
 ) -> np.ndarray:
@@ -328,21 +368,12 @@ def save_embedding_cache(
             index.chunks
         ),
         "chunks": [
-            {
-                "document": chunk.get(
-                    "document"
-                ),
-                "chunk_id": chunk.get(
-                    "chunk_id"
-                ),
-                "document_sha256": chunk.get(
-                    "document_sha256"
-                ),
-            }
+            chunk_cache_identity(
+                chunk
+            )
             for chunk in index.chunks
-        ],
+        ],    
     }
-
     with metadata_path.open(
         "w",
         encoding="utf-8",
@@ -400,19 +431,11 @@ def load_embedding_cache(
         )
 
         current_chunks = [
-            {
-                "document": chunk.get(
-                    "document"
-                ),
-                "chunk_id": chunk.get(
-                    "chunk_id"
-                ),
-                "document_sha256": chunk.get(
-                    "document_sha256"
-                ),
-            }
+            chunk_cache_identity(
+                chunk
+            )
             for chunk in index.chunks
-        ]
+        ]              
 
         if (
             metadata.get("model")
@@ -650,6 +673,7 @@ def main() -> None:
         query=query,
         results=results,
     )
+
 
 
 if __name__ == "__main__":
