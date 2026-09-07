@@ -4,6 +4,7 @@
         "title": "Annual Mining Statistical Bulletin 2024",
         "agency": "Ministry of Mines and Minerals Development",
         "document_type": "statistical_bulletin",
+        "source_type": "pdf",
         "url": "https://www.mmmd.gov.zm/wp-content/uploads/2026/06/eCopy-STATISTICAL-BULLETIN.pdf",
         "filename": "zambia_annual_mining_statistical_bulletin_2024.pdf",
         "enabled": true
@@ -13,6 +14,7 @@
         "title": "National Critical Minerals Strategy 2024-2028",
         "agency": "Ministry of Mines and Minerals Development",
         "document_type": "strategy",
+        "source_type": "pdf",
         "url": "https://www.mmmd.gov.zm/wp-content/uploads/2024/09/1-National-Critical-Minerals-Strategy-2024-%E2%80%93-2028-Booklet-August-27-2024.pdf",
         "filename": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
         "enabled": true
@@ -22,6 +24,7 @@
         "title": "National Mineral Resources Development Policy 2022",
         "agency": "Ministry of Mines and Minerals Development",
         "document_type": "policy",
+        "source_type": "pdf",
         "url": "https://www.mmmd.gov.zm/wp-content/uploads/2024/09/National-Mineral-Resources-Development-Policy-2022.pdf",
         "filename": "zambia_national_mineral_resources_development_policy_2022.pdf",
         "enabled": true
@@ -31,6 +34,7 @@
         "title": "Application for a Mining Right - Form I",
         "agency": "Ministry of Mines and Minerals Development",
         "document_type": "application_form",
+        "source_type": "pdf",
         "url": "https://www.mmmd.gov.zm/wp-content/uploads/2022/06/APPLICATION-FOR-MINING-RIGHT.pdf",
         "filename": "zambia_application_for_mining_right_form_i.pdf",
         "enabled": true
@@ -40,26 +44,39 @@
         "title": "Mining Rights Area Charges",
         "agency": "Ministry of Mines and Minerals Development",
         "document_type": "fees",
+        "source_type": "pdf",
         "url": "https://www.mmmd.gov.zm/wp-content/uploads/2022/06/APPLICATION-FEES-2016.pdf",
         "filename": "zambia_mining_rights_area_charges.pdf",
         "enabled": true
     },
     {
         "id": "ministry_monitoring_evaluation_plan_2022_2026",
-        "title": "Monitoring and Evaluation Plan 2022-2026",
+        "title": "Ministry of Mines and Minerals Development Monitoring and Evaluation Plan 2022-2026",
         "agency": "Ministry of Mines and Minerals Development",
         "document_type": "planning",
+        "source_type": "pdf",
         "url": "https://www.mmmd.gov.zm/wp-content/uploads/2025/07/Ministry-of-Mines-and-Minerals-Development-Monitoring-and-Evaluation-Plan-2022-2026.pdf",
         "filename": "zambia_mining_monitoring_evaluation_plan_2022_2026.pdf",
         "enabled": true
     },
     {
-        "id": "local_content_regulations_2025",
-        "title": "Geological and Minerals Development Preference for Zambian Goods and Services Regulations 2025",
+    "id": "local_content_regulations_2025",
+    "title": "Geological and Minerals Development Preference for Zambian Goods and Services Regulations 2025",
+    "agency": "Ministry of Mines and Minerals Development",
+    "document_type": "regulation",
+    "source_type": "pdf",
+    "url": "https://www.mmmd.gov.zm/wp-content/uploads/2025/12/The-Geological-and-Minerals-Development-Preference-for-Zambian-Goods-and-Services-Regulations-2025.pdf",
+    "filename": "zambia_mining_local_content_regulations_2025.pdf",
+    "enabled": true
+    },
+    {
+        "id": "mining_rights_requirements",
+        "title": "Mining and Non-Mining Rights Requirements",
         "agency": "Ministry of Mines and Minerals Development",
-        "document_type": "regulation",
-        "url": "https://www.mmmd.gov.zm/wp-content/uploads/2025/12/The-Geological-and-Minerals-Development-Preference-for-Zambian-Goods-and-Services-Regulations-2025.pdf",
-        "filename": "zambia_mining_local_content_regulations_2025.pdf",
+        "document_type": "licensing_requirements",
+        "source_type": "html",
+        "url": "https://www.mmmd.gov.zm/?page_id=1880",
+        "filename": "zambia_mining_rights_requirements.html",
         "enabled": true
     }
 ]

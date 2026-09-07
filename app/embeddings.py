@@ -63,6 +63,31 @@ def chunk_cache_identity(
     chunk: dict,
 ) -> dict:
     """
+    Return the identity of the exact chunk text used
+    to generate an embedding.
+    """
+
+    return {
+        "document": chunk.get(
+            "document"
+        ),
+        "chunk_id": chunk.get(
+            "chunk_id"
+        ),
+        "document_sha256": chunk.get(
+            "document_sha256"
+        ),
+        "text_sha256": chunk_text_sha256(
+            chunk.get(
+                "text",
+                ""
+            )
+        ),
+    }
+def chunk_cache_identity(
+    chunk: dict,
+) -> dict:
+    """
     Return the information that uniquely identifies
     the exact chunk text used for an embedding.
 
@@ -372,8 +397,8 @@ def save_embedding_cache(
                 chunk
             )
             for chunk in index.chunks
-        ],    
-    }
+        ],
+    }    
     with metadata_path.open(
         "w",
         encoding="utf-8",
@@ -433,9 +458,9 @@ def load_embedding_cache(
         current_chunks = [
             chunk_cache_identity(
                 chunk
-            )
+            )   
             for chunk in index.chunks
-        ]              
+        ]                
 
         if (
             metadata.get("model")

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from ingestion.chunk import chunk_document
 from ingestion.download import download_document
+from ingestion.parse_html import parse_html
 from ingestion.parse_pdf import parse_pdf
 
 
@@ -22,6 +23,12 @@ DEFAULT_SOURCE_FILE = (
     / "sources.json"
 )
 
+RAW_DATA_DIR = (
+    PROJECT_ROOT
+    / "data"
+    / "raw"
+)
+
 
 # ---------------------------------------------------------
 # Source registry
@@ -31,12 +38,14 @@ def load_sources(
     source_file: Path = DEFAULT_SOURCE_FILE,
 ) -> list[dict]:
     """
-    Load MineLens document sources from the JSON registry.
+    Load and validate MineLens sources from the
+    JSON source registry.
     """
 
     if not source_file.exists():
         raise FileNotFoundError(
-            f"Source registry not found: {source_file}"
+            f"Source registry not found: "
+            f"{source_file}"
         )
 
     with source_file.open(
@@ -44,11 +53,17 @@ def load_sources(
         encoding="utf-8",
     ) as file:
 
-        sources = json.load(file)
+        sources = json.load(
+            file
+        )
 
-    if not isinstance(sources, list):
+    if not isinstance(
+        sources,
+        list,
+    ):
         raise ValueError(
-            "sources.json must contain a JSON list."
+            "sources.json must contain "
+            "a JSON list."
         )
 
     required_fields = {
@@ -56,11 +71,28 @@ def load_sources(
         "title",
         "agency",
         "document_type",
+        "source_type",
         "url",
         "filename",
     }
 
+    supported_source_types = {
+        "pdf",
+        "html",
+    }
+
+    seen_ids: set[str] = set()
+
     for source in sources:
+
+        if not isinstance(
+            source,
+            dict,
+        ):
+            raise ValueError(
+                "Every source in sources.json "
+                "must be a JSON object."
+            )
 
         missing = (
             required_fields
@@ -69,177 +101,88 @@ def load_sources(
 
         if missing:
             raise ValueError(
-                f"Source {source.get('id')} "
+                f"Source "
+                f"{source.get('id')} "
                 f"is missing fields: "
                 f"{sorted(missing)}"
+            )
+
+        source_id = source[
+            "id"
+        ]
+
+        if source_id in seen_ids:
+            raise ValueError(
+                f"Duplicate source ID: "
+                f"{source_id}"
+            )
+
+        seen_ids.add(
+            source_id
+        )
+
+        source_type = source[
+            "source_type"
+        ].lower()
+
+        if (
+            source_type
+            not in supported_source_types
+        ):
+            raise ValueError(
+                f"Unsupported source_type "
+                f"'{source_type}' "
+                f"for source "
+                f"'{source_id}'."
+            )
+
+        # Normalize the value once so the rest of
+        # the pipeline does not need to handle
+        # PDF/pdf/Html/etc.
+
+        source[
+            "source_type"
+        ] = source_type
+
+        filename = source[
+            "filename"
+        ].lower()
+
+        if (
+            source_type == "pdf"
+            and not filename.endswith(
+                ".pdf"
+            )
+        ):
+            raise ValueError(
+                f"PDF source "
+                f"'{source_id}' "
+                f"must use a .pdf filename."
+            )
+
+        if (
+            source_type == "html"
+            and not filename.endswith(
+                (
+                    ".html",
+                    ".htm",
+                )
+            )
+        ):
+            raise ValueError(
+                f"HTML source "
+                f"'{source_id}' "
+                f"must use a .html "
+                f"or .htm filename."
             )
 
     return sources
 
 
 # ---------------------------------------------------------
-# Metadata enrichment
+# Utilities
 # ---------------------------------------------------------
 
-def enrich_metadata(
-    pdf_path: Path,
-    source: dict,
-) -> None:
-    """
-    Add MineLens-specific source information to the
-    metadata created by download.py.
-    """
-
-    metadata_path = pdf_path.with_suffix(
-        pdf_path.suffix
-        + ".metadata.json"
-    )
-
-    if not metadata_path.exists():
-        return
-
-    with metadata_path.open(
-        "r",
-        encoding="utf-8",
-    ) as file:
-
-        metadata = json.load(file)
-
-    metadata.update(
-        {
-            "source_id": source[
-                "id"
-            ],
-            "title": source[
-                "title"
-            ],
-            "agency": source[
-                "agency"
-            ],
-            "document_type": source[
-                "document_type"
-            ],
-        }
-    )
-
-    with metadata_path.open(
-        "w",
-        encoding="utf-8",
-    ) as file:
-
-        json.dump(
-            metadata,
-            file,
-            indent=4,
-        )
-
-
-# ---------------------------------------------------------
-# One source
-# ---------------------------------------------------------
-
-def ingest_source(
-    source: dict,
-    overwrite: bool = False,
-) -> dict:
-    """
-    Run one source through the complete MineLens
-    PDF ingestion pipeline.
-    """
-
-    source_id = source[
-        "id"
-    ]
-
-    print()
-    print("=" * 72)
-
-    print(
-        f"INGESTING: {source_id}"
-    )
-
-    print("=" * 72)
-
-    print(
-        f"Title: {source['title']}"
-    )
-
-    print(
-        f"Type:  {source['document_type']}"
-    )
-
-    print()
-
-    # -----------------------------------------------------
-    # Download
-    # -----------------------------------------------------
-
-    pdf_path = download_document(
-        url=source["url"],
-        filename=source["filename"],
-        overwrite=overwrite,
-    )
-
-    enrich_metadata(
-        pdf_path=pdf_path,
-        source=source,
-    )
-
-    # -----------------------------------------------------
-    # Parse PDF
-    # -----------------------------------------------------
-
-    pages_path = parse_pdf(
-        pdf_path=pdf_path,
-        overwrite=overwrite,
-    )
-
-    # -----------------------------------------------------
-    # Chunk
-    # -----------------------------------------------------
-
-    chunks_path = chunk_document(
-        input_path=pages_path,
-        overwrite=overwrite,
-    )
-    chunk_count = count_jsonl_records(
-        chunks_path
-    )
-
-    if chunk_count == 0:
-
-        print()
-        print(
-            "[WARNING] No searchable text "
-            "was extracted from this document."
-        )
-
-        print(
-            "The PDF may be scanned and "
-            "require OCR."
-        )
-
-        return {
-            "id": source_id,
-            "status": "needs_ocr",
-            "pdf": str(pdf_path),
-            "pages": str(pages_path),
-            "chunks": str(chunks_path),
-            "chunk_count": 0,
-        }
-    return {
-        "id": source_id,
-        "status": "success",
-        "pdf": str(pdf_path),
-        "pages": str(pages_path),
-        "chunks": str(chunks_path),
-        "chunk_count": chunk_count,
-    }    
-
-
-# ---------------------------------------------------------
-# Batch ingestion
-# ---------------------------------------------------------
 def count_jsonl_records(
     path: Path,
 ) -> int:
@@ -264,6 +207,321 @@ def count_jsonl_records(
 
     return count
 
+
+# ---------------------------------------------------------
+# Metadata enrichment
+# ---------------------------------------------------------
+
+def enrich_metadata(
+    document_path: Path,
+    source: dict,
+) -> None:
+    """
+    Add MineLens-specific registry information to the
+    metadata associated with a downloaded source.
+    """
+
+    metadata_path = (
+        document_path.with_suffix(
+            document_path.suffix
+            + ".metadata.json"
+        )
+    )
+
+    if not metadata_path.exists():
+        return
+
+    with metadata_path.open(
+        "r",
+        encoding="utf-8",
+    ) as file:
+
+        metadata = json.load(
+            file
+        )
+
+    metadata.update(
+        {
+            "source_id": source[
+                "id"
+            ],
+            "title": source[
+                "title"
+            ],
+            "agency": source[
+                "agency"
+            ],
+            "document_type": source[
+                "document_type"
+            ],
+            "source_type": source[
+                "source_type"
+            ],
+        }
+    )
+
+    with metadata_path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        json.dump(
+            metadata,
+            file,
+            indent=4,
+        )
+
+
+# ---------------------------------------------------------
+# PDF ingestion
+# ---------------------------------------------------------
+
+def ingest_pdf_source(
+    source: dict,
+    overwrite: bool = False,
+) -> tuple[Path, Path]:
+    """
+    Download and parse one PDF source.
+
+    Returns:
+        raw_path
+        pages_path
+    """
+
+    raw_path = download_document(
+        url=source[
+            "url"
+        ],
+        filename=source[
+            "filename"
+        ],
+        overwrite=overwrite,
+    )
+
+    enrich_metadata(
+        document_path=raw_path,
+        source=source,
+    )
+
+    pages_path = parse_pdf(
+        pdf_path=raw_path,
+        overwrite=overwrite,
+    )
+
+    return (
+        raw_path,
+        pages_path,
+    )
+
+
+# ---------------------------------------------------------
+# HTML ingestion
+# ---------------------------------------------------------
+
+def ingest_html_source(
+    source: dict,
+    overwrite: bool = False,
+) -> tuple[Path, Path]:
+    """
+    Download and parse one HTML source.
+
+    parse_html() handles both downloading and parsing
+    the webpage.
+    """
+
+    pages_path = parse_html(
+        url=source[
+            "url"
+        ],
+        filename=source[
+            "filename"
+        ],
+        overwrite=overwrite,
+    )
+
+    raw_path = (
+        RAW_DATA_DIR
+        / source[
+            "filename"
+        ]
+    )
+
+    enrich_metadata(
+        document_path=raw_path,
+        source=source,
+    )
+
+    return (
+        raw_path,
+        pages_path,
+    )
+
+
+# ---------------------------------------------------------
+# One source
+# ---------------------------------------------------------
+
+def ingest_source(
+    source: dict,
+    overwrite: bool = False,
+) -> dict:
+    """
+    Run one source through the complete MineLens
+    ingestion pipeline.
+
+    Supported source types:
+        PDF
+        HTML
+    """
+
+    source_id = source[
+        "id"
+    ]
+
+    source_type = source[
+        "source_type"
+    ]
+
+    print()
+    print("=" * 72)
+
+    print(
+        f"INGESTING: "
+        f"{source_id}"
+    )
+
+    print("=" * 72)
+
+    print(
+        f"Title:       "
+        f"{source['title']}"
+    )
+
+    print(
+        f"Document:    "
+        f"{source['document_type']}"
+    )
+
+    print(
+        f"Source type: "
+        f"{source_type}"
+    )
+
+    print()
+
+    # -----------------------------------------------------
+    # Source-specific ingestion
+    # -----------------------------------------------------
+
+    if source_type == "pdf":
+
+        raw_path, pages_path = (
+            ingest_pdf_source(
+                source=source,
+                overwrite=overwrite,
+            )
+        )
+
+    elif source_type == "html":
+
+        raw_path, pages_path = (
+            ingest_html_source(
+                source=source,
+                overwrite=overwrite,
+            )
+        )
+
+    else:
+
+        # load_sources() should prevent this path,
+        # but retaining the guard makes ingest_source()
+        # safe when called directly.
+
+        raise ValueError(
+            f"Unsupported source type: "
+            f"{source_type}"
+        )
+
+    # -----------------------------------------------------
+    # Chunk
+    # -----------------------------------------------------
+
+    chunks_path = chunk_document(
+        input_path=pages_path,
+        overwrite=overwrite,
+    )
+
+    chunk_count = (
+        count_jsonl_records(
+            chunks_path
+        )
+    )
+
+    # -----------------------------------------------------
+    # Empty document handling
+    # -----------------------------------------------------
+
+    if chunk_count == 0:
+
+        if source_type == "pdf":
+
+            print()
+            print(
+                "[WARNING] No searchable text "
+                "was extracted from this document."
+            )
+
+            print(
+                "The PDF may be scanned and "
+                "require OCR."
+            )
+
+            return {
+                "id": source_id,
+                "status": "needs_ocr",
+                "source_type": source_type,
+                "raw": str(
+                    raw_path
+                ),
+                "pages": str(
+                    pages_path
+                ),
+                "chunks": str(
+                    chunks_path
+                ),
+                "chunk_count": 0,
+            }
+
+        raise ValueError(
+            "HTML source produced zero "
+            "searchable chunks."
+        )
+
+    # -----------------------------------------------------
+    # Success
+    # -----------------------------------------------------
+
+    return {
+        "id": source_id,
+        "status": "success",
+        "source_type": source_type,
+        "raw": str(
+            raw_path
+        ),
+        "pages": str(
+            pages_path
+        ),
+        "chunks": str(
+            chunks_path
+        ),
+        "chunk_count": chunk_count,
+    }
+
+
+# ---------------------------------------------------------
+# Batch ingestion
+# ---------------------------------------------------------
+
 def ingest_sources(
     sources: list[dict],
     source_ids: set[str] | None = None,
@@ -285,7 +543,9 @@ def ingest_sources(
 
         if (
             source_ids
-            and source["id"]
+            and source[
+                "id"
+            ]
             not in source_ids
         ):
             continue
@@ -315,6 +575,9 @@ def ingest_sources(
                     "id"
                 ],
                 "status": "failed",
+                "source_type": source.get(
+                    "source_type"
+                ),
                 "error": str(
                     error
                 ),
@@ -347,33 +610,42 @@ def display_summary(
     successful = [
         result
         for result in results
-        if result["status"] == "success"
+        if result[
+            "status"
+        ] == "success"
     ]
 
     needs_ocr = [
         result
         for result in results
-        if result["status"] == "needs_ocr"
+        if result[
+            "status"
+        ] == "needs_ocr"
     ]
 
     failed = [
         result
         for result in results
-        if result["status"] == "failed"
+        if result[
+            "status"
+        ] == "failed"
     ]
 
     print()
 
     print(
-        f"Successful: {len(successful)}"
+        f"Successful: "
+        f"{len(successful)}"
     )
 
     print(
-        f"Needs OCR:  {len(needs_ocr)}"
+        f"Needs OCR:  "
+        f"{len(needs_ocr)}"
     )
 
     print(
-        f"Failed:     {len(failed)}"
+        f"Failed:     "
+        f"{len(failed)}"
     )
 
     if successful:
@@ -387,7 +659,9 @@ def display_summary(
 
             print(
                 f"  [OK] "
-                f"{result['id']}"
+                f"{result['id']} "
+                f"({result['source_type']}, "
+                f"{result['chunk_count']} chunks)"
             )
 
     if needs_ocr:
@@ -433,7 +707,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Batch ingest MineLens "
-            "official mining documents."
+            "official mining sources."
         )
     )
 
@@ -451,7 +725,7 @@ def main() -> None:
         action="store_true",
         help=(
             "Redownload and regenerate "
-            "existing documents."
+            "existing sources."
         ),
     )
 
@@ -460,7 +734,9 @@ def main() -> None:
     sources = load_sources()
 
     selected_sources = (
-        set(args.source)
+        set(
+            args.source
+        )
         if args.source
         else None
     )
@@ -474,7 +750,8 @@ def main() -> None:
     if not results:
 
         print(
-            "No matching enabled sources found."
+            "No matching enabled "
+            "sources found."
         )
 
         return
