@@ -127,21 +127,29 @@ def tokenize(text: str) -> list[str]:
 
 def load_chunks(
     data_directory: Path = PROCESSED_DATA_DIR,
+    include_superseded: bool = False,
 ) -> list[dict]:
     """
-    Load all *.chunks.jsonl files from data/processed/.
+    Load all searchable *.chunks.jsonl files from
+    data/processed/.
 
-    This means MineLens automatically searches across every
-    document that has passed through our ingestion pipeline.
+    Superseded sources are excluded by default so
+    normal MineLens searches prefer current information.
+
+    Set include_superseded=True when historical material
+    should also be searchable.
     """
 
     if not data_directory.exists():
         raise FileNotFoundError(
-            f"Processed data directory not found: {data_directory}"
+            f"Processed data directory not found: "
+            f"{data_directory}"
         )
 
     chunk_files = sorted(
-        data_directory.glob("*.chunks.jsonl")
+        data_directory.glob(
+            "*.chunks.jsonl"
+        )
     )
 
     if not chunk_files:
@@ -170,20 +178,45 @@ def load_chunks(
                     continue
 
                 try:
-                    chunk = json.loads(line)
+                    chunk = json.loads(
+                        line
+                    )
 
                 except json.JSONDecodeError as error:
                     raise ValueError(
-                        f"Invalid JSON in {chunk_file.name} "
+                        f"Invalid JSON in "
+                        f"{chunk_file.name} "
                         f"on line {line_number}"
                     ) from error
 
-                if not chunk.get("text"):
+                if not chunk.get(
+                    "text"
+                ):
                     continue
 
-                chunk["_chunk_file"] = chunk_file.name
+                source_status = (
+                    chunk.get(
+                        "source_status",
+                        ""
+                    )
+                    .strip()
+                    .lower()
+                )
 
-                chunks.append(chunk)
+                if (
+                    not include_superseded
+                    and source_status
+                    == "superseded"
+                ):
+                    continue
+
+                chunk[
+                    "_chunk_file"
+                ] = chunk_file.name
+
+                chunks.append(
+                    chunk
+                )
 
     if not chunks:
         raise ValueError(
@@ -646,7 +679,14 @@ def main() -> None:
             f"(default: {DEFAULT_TOP_K})"
         ),
     )
-
+    parser.add_argument(
+        "--include-superseded",
+        action="store_true",
+        help=(
+            "Include superseded historical sources "
+            "in search results."
+        ),
+    )
     args = parser.parse_args()
 
     query = " ".join(
@@ -662,7 +702,11 @@ def main() -> None:
         "Loading MineLens index..."
     )
 
-    chunks = load_chunks()
+    chunks = load_chunks(
+        include_superseded=(
+            args.include_superseded
+        )
+    )
 
     index = BM25Index(
         chunks

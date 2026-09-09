@@ -72,6 +72,7 @@ def load_sources(
         "agency",
         "document_type",
         "source_type",
+        "status",
         "url",
         "filename",
     }
@@ -80,6 +81,11 @@ def load_sources(
         "pdf",
         "html",
     }
+    supported_statuses = {
+        "current",
+        "historical",
+        "superseded",
+    }    
 
     seen_ids: set[str] = set()
 
@@ -176,8 +182,26 @@ def load_sources(
                 f"or .htm filename."
             )
 
-    return sources
+    
+    source_status = source[
+        "status"
+    ].lower()
 
+    if (
+        source_status
+        not in supported_statuses
+    ):
+        raise ValueError(
+            f"Unsupported source status "
+            f"'{source_status}' "
+            f"for source "
+            f"'{source_id}'."
+        )
+
+    source[
+        "status"
+    ] = source_status
+    return sources
 
 # ---------------------------------------------------------
 # Utilities
@@ -206,7 +230,47 @@ def count_jsonl_records(
                 count += 1
 
     return count
+def source_provenance(
+    source: dict,
+) -> dict:
+    """
+    Return the canonical provenance metadata attached
+    to MineLens records for a source.
+    """
 
+    return {
+        "source_id": source[
+            "id"
+        ],
+        "title": source[
+            "title"
+        ],
+        "agency": source[
+            "agency"
+        ],
+        "document_type": source[
+            "document_type"
+        ],
+        "source_type": source[
+            "source_type"
+        ],
+        "source_status": source[
+            "status"
+        ],
+        "published_date": source.get(
+            "published_date"
+        ),
+        "effective_date": source.get(
+            "effective_date"
+        ),
+        "superseded_by": source.get(
+            "superseded_by"
+        ),
+        "supersedes": source.get(
+            "supersedes",
+            [],
+        ),
+    }
 
 # ---------------------------------------------------------
 # Metadata enrichment
@@ -241,23 +305,9 @@ def enrich_metadata(
         )
 
     metadata.update(
-        {
-            "source_id": source[
-                "id"
-            ],
-            "title": source[
-                "title"
-            ],
-            "agency": source[
-                "agency"
-            ],
-            "document_type": source[
-                "document_type"
-            ],
-            "source_type": source[
-                "source_type"
-            ],
-        }
+        source_provenance(
+            source
+        )
     )
 
     with metadata_path.open(
@@ -271,7 +321,69 @@ def enrich_metadata(
             indent=4,
         )
 
+def enrich_jsonl_records(
+    path: Path,
+    source: dict,
+) -> None:
+    """
+    Attach canonical source provenance to every record
+    in a MineLens JSONL file.
 
+    The file is rewritten atomically through a temporary
+    file so a failed write does not corrupt the original.
+    """
+
+    if not path.exists():
+        return
+
+    provenance = source_provenance(
+        source
+    )
+
+    temporary_path = (
+        path.with_suffix(
+            path.suffix
+            + ".tmp"
+        )
+    )
+
+    with path.open(
+        "r",
+        encoding="utf-8",
+    ) as input_file:
+
+        with temporary_path.open(
+            "w",
+            encoding="utf-8",
+        ) as output_file:
+
+            for line in input_file:
+
+                if not line.strip():
+                    continue
+
+                record = json.loads(
+                    line
+                )
+
+                record.update(
+                    provenance
+                )
+
+                output_file.write(
+                    json.dumps(
+                        record,
+                        ensure_ascii=False,
+                    )
+                )
+
+                output_file.write(
+                    "\n"
+                )
+
+    temporary_path.replace(
+        path
+    )
 # ---------------------------------------------------------
 # PDF ingestion
 # ---------------------------------------------------------
@@ -445,12 +557,19 @@ def ingest_source(
     # -----------------------------------------------------
     # Chunk
     # -----------------------------------------------------
+    enrich_jsonl_records(
+        path=pages_path,
+        source=source,
+    )
 
     chunks_path = chunk_document(
         input_path=pages_path,
         overwrite=overwrite,
     )
-
+    enrich_jsonl_records(
+        path=chunks_path,
+        source=source,
+    )
     chunk_count = (
         count_jsonl_records(
             chunks_path
