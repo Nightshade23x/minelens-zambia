@@ -42,7 +42,7 @@ DEFAULT_LICENSING_FILE = (
 DEFAULT_TOP_K = 10
 
 
-LICENCE_TYPE_PHRASES = {
+SPECIFIC_LICENCE_TYPE_PHRASES = {
     "LML": (
         "large scale mining",
         "large-scale mining",
@@ -91,6 +91,18 @@ LICENCE_TYPE_PHRASES = {
         "mineral processing license",
         "mpl",
     ),
+}
+
+
+LICENCE_FAMILY_PHRASES = {
+    "exploration": {
+        "LEL",
+        "SEL",
+    },
+    "mining": {
+        "LML",
+        "SML",
+    },
 }
 
 
@@ -224,26 +236,29 @@ def normalize_licence_code(
 # Query inference
 # ---------------------------------------------------------
 
-def infer_licence_type(
+def infer_specific_licence_type(
     query: str,
 ) -> str | None:
     """
-    Infer a licence type from natural-language query text.
+    Infer one specific licence type where the query
+    explicitly identifies one.
+
+    Examples:
+        large-scale mining -> LML
+        small-scale exploration -> SEL
+        artisanal mining -> AMR
     """
 
     normalized = normalize_text(
         query
     )
 
-    # Check longer phrases first to avoid ambiguous
-    # matches such as "mining" by itself.
-
     candidates: list[
         tuple[int, str]
     ] = []
 
     for code, phrases in (
-        LICENCE_TYPE_PHRASES.items()
+        SPECIFIC_LICENCE_TYPE_PHRASES.items()
     ):
 
         for phrase in phrases:
@@ -272,12 +287,83 @@ def infer_licence_type(
         return None
 
     candidates.sort(
-        reverse=True
+        key=lambda item: item[0],
+        reverse=True,
     )
 
     return candidates[
         0
     ][1]
+
+
+def infer_licence_types(
+    query: str,
+) -> set[str] | None:
+    """
+    Infer one or more allowed licence types.
+
+    Specific licence types take priority.
+
+    Generic families:
+        exploration licences -> LEL or SEL
+        mining licences      -> LML or SML
+    """
+
+    specific = (
+        infer_specific_licence_type(
+            query
+        )
+    )
+
+    if specific is not None:
+        return {
+            specific
+        }
+
+    normalized = normalize_text(
+        query
+    )
+
+    exploration_patterns = (
+        "exploration licence",
+        "exploration licences",
+        "exploration license",
+        "exploration licenses",
+        "exploration rights",
+        "exploration applications",
+    )
+
+    for phrase in (
+        exploration_patterns
+    ):
+
+        if phrase in normalized:
+
+            return set(
+                LICENCE_FAMILY_PHRASES[
+                    "exploration"
+                ]
+            )
+
+    mining_patterns = (
+        "mining licence",
+        "mining licences",
+        "mining license",
+        "mining licenses",
+        "mining applications",
+    )
+
+    for phrase in mining_patterns:
+
+        if phrase in normalized:
+
+            return set(
+                LICENCE_FAMILY_PHRASES[
+                    "mining"
+                ]
+            )
+
+    return None
 
 
 def infer_decision(
@@ -356,12 +442,8 @@ def infer_location(
     str | None,
 ]:
     """
-    Infer province and district from location names
-    already present in the structured dataset.
-
-    Returns:
-        province
-        district
+    Infer province and district from locations already
+    present in the structured dataset.
     """
 
     normalized_query = (
@@ -401,14 +483,10 @@ def infer_location(
 
     matched_province = None
 
-    province_candidates = sorted(
+    for province in sorted(
         provinces,
         key=len,
         reverse=True,
-    )
-
-    for province in (
-        province_candidates
     ):
 
         if (
@@ -426,14 +504,10 @@ def infer_location(
 
     matched_district = None
 
-    district_candidates = sorted(
+    for district in sorted(
         districts,
         key=len,
         reverse=True,
-    )
-
-    for district in (
-        district_candidates
     ):
 
         if (
@@ -467,7 +541,11 @@ def record_has_commodity(
     Check commodity list using exact normalized codes.
     """
 
-    target = commodity.upper()
+    target = (
+        commodity
+        .strip()
+        .upper()
+    )
 
     commodities = {
         str(
@@ -488,7 +566,7 @@ def record_has_commodity(
 def record_matches(
     record: dict,
     licence_code: str | None = None,
-    licence_type: str | None = None,
+    licence_types: set[str] | None = None,
     decision: str | None = None,
     province: str | None = None,
     district: str | None = None,
@@ -496,8 +574,8 @@ def record_matches(
     applicant: str | None = None,
 ) -> bool:
     """
-    Return True if a licensing record satisfies all
-    supplied structured filters.
+    Return True if a licensing record satisfies every
+    supplied structured filter.
     """
 
     if licence_code is not None:
@@ -521,16 +599,23 @@ def record_matches(
         ):
             return False
 
-    if licence_type is not None:
+    if licence_types is not None:
+
+        record_type = str(
+            record.get(
+                "licence_type_code",
+                "",
+            )
+        ).upper()
+
+        allowed_types = {
+            value.upper()
+            for value in licence_types
+        }
 
         if (
-            str(
-                record.get(
-                    "licence_type_code",
-                    "",
-                )
-            ).upper()
-            != licence_type.upper()
+            record_type
+            not in allowed_types
         ):
             return False
 
@@ -621,7 +706,7 @@ def record_matches(
 def filter_records(
     records: list[dict],
     licence_code: str | None = None,
-    licence_type: str | None = None,
+    licence_types: set[str] | None = None,
     decision: str | None = None,
     province: str | None = None,
     district: str | None = None,
@@ -638,7 +723,7 @@ def filter_records(
         if record_matches(
             record=record,
             licence_code=licence_code,
-            licence_type=licence_type,
+            licence_types=licence_types,
             decision=decision,
             province=province,
             district=district,
@@ -656,7 +741,7 @@ def licensing_search_text(
     record: dict,
 ) -> str:
     """
-    Build readable search text from one structured
+    Build readable BM25 text from one structured
     licensing record.
     """
 
@@ -824,14 +909,12 @@ def search_licensing_records(
     dict,
 ]:
     """
-    Search licensing records.
+    Search structured licensing records.
 
-    Natural-language query terms are first converted into
-    structured filters. Explicit CLI filters override
-    inferred values.
+    Query conditions are converted into hard filters
+    before BM25 ranking.
 
-    BM25 is then used only to rank records that survive
-    those filters.
+    Explicit CLI filters override inferred filters.
     """
 
     if top_k <= 0:
@@ -845,8 +928,8 @@ def search_licensing_records(
         )
     )
 
-    inferred_type = (
-        infer_licence_type(
+    inferred_types = (
+        infer_licence_types(
             query
         )
     )
@@ -871,14 +954,25 @@ def search_licensing_records(
         )
     )
 
+    if licence_type is not None:
+
+        selected_types = {
+            licence_type.upper()
+        }
+
+    else:
+
+        selected_types = (
+            inferred_types
+        )
+
     filters = {
         "licence_code": (
             licence_code
             or inferred_code
         ),
-        "licence_type": (
-            licence_type
-            or inferred_type
+        "licence_types": (
+            selected_types
         ),
         "decision": (
             decision
@@ -907,6 +1001,7 @@ def search_licensing_records(
     )
 
     if not filtered:
+
         return (
             [],
             filters,
@@ -918,7 +1013,7 @@ def search_licensing_records(
         )
     )
 
-    # Exact licence-code lookups should not need ranking.
+    # Exact licence codes are deterministic lookups.
 
     if filters[
         "licence_code"
@@ -951,10 +1046,8 @@ def search_licensing_records(
         ),
     )
 
-    # BM25 may return nothing if the query consisted
-    # almost entirely of terms already consumed by
-    # structured filtering. In that case return the
-    # filtered records directly.
+    # If all useful query terms were already consumed by
+    # hard filters, return the filtered records directly.
 
     if not results:
 
@@ -978,47 +1071,78 @@ def search_licensing_records(
 # Display
 # ---------------------------------------------------------
 
+def format_licence_types(
+    licence_types: set[str],
+) -> str:
+    """
+    Format one or multiple licence types for display.
+    """
+
+    return ", ".join(
+        sorted(
+            licence_types
+        )
+    )
+
+
 def display_filters(
     filters: dict,
 ) -> None:
     """
-    Show the filters MineLens inferred from the query.
+    Display filters inferred or explicitly supplied.
     """
-
-    active = {
-        key: value
-        for key, value in filters.items()
-        if value is not None
-    }
 
     print()
     print(
         "Structured filters:"
     )
 
-    if not active:
-
-        print(
-            "  None"
-        )
-
-        return
+    active_count = 0
 
     for key, value in (
-        active.items()
+        filters.items()
     ):
 
-        label = (
-            key.replace(
-                "_",
-                " ",
+        if value is None:
+            continue
+
+        active_count += 1
+
+        if key == "licence_types":
+
+            label = (
+                "Licence Type"
             )
-            .title()
-        )
+
+            formatted_value = (
+                format_licence_types(
+                    value
+                )
+            )
+
+        else:
+
+            label = (
+                key.replace(
+                    "_",
+                    " ",
+                )
+                .title()
+            )
+
+            formatted_value = (
+                value
+            )
 
         print(
             f"  {label}: "
-            f"{value}"
+            f"{formatted_value}"
+        )
+
+    if active_count == 0:
+
+        print(
+            "  None"
         )
 
 

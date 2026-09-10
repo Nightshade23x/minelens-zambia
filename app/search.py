@@ -13,9 +13,15 @@ from pathlib import Path
 # Project paths
 # ---------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(
+    __file__
+).resolve().parents[1]
 
-PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"
+PROCESSED_DATA_DIR = (
+    PROJECT_ROOT
+    / "data"
+    / "processed"
+)
 
 
 # ---------------------------------------------------------
@@ -26,6 +32,15 @@ DEFAULT_TOP_K = 5
 
 BM25_K1 = 1.5
 BM25_B = 0.75
+
+
+# ---------------------------------------------------------
+# Structured record configuration
+# ---------------------------------------------------------
+
+STRUCTURED_RECORD_TYPES = {
+    "licensing_application",
+}
 
 
 # ---------------------------------------------------------
@@ -93,7 +108,9 @@ STOPWORDS = {
 # Text processing
 # ---------------------------------------------------------
 
-def tokenize(text: str) -> list[str]:
+def tokenize(
+    text: str,
+) -> list[str]:
     """
     Convert text into normalized searchable tokens.
 
@@ -128,16 +145,28 @@ def tokenize(text: str) -> list[str]:
 def load_chunks(
     data_directory: Path = PROCESSED_DATA_DIR,
     include_superseded: bool = False,
+    include_structured: bool = False,
 ) -> list[dict]:
     """
-    Load all searchable *.chunks.jsonl files from
+    Load searchable *.chunks.jsonl files from
     data/processed/.
 
     Superseded sources are excluded by default so
     normal MineLens searches prefer current information.
 
+    Structured records such as individual licensing
+    applications are also excluded from general document
+    retrieval by default.
+
+    Structured datasets have their own dedicated search
+    systems and should not distort BM25 or semantic
+    document ranking.
+
     Set include_superseded=True when historical material
     should also be searchable.
+
+    Set include_structured=True only for debugging or
+    deliberate combined-corpus experiments.
     """
 
     if not data_directory.exists():
@@ -158,7 +187,9 @@ def load_chunks(
             f"{data_directory}"
         )
 
-    chunks: list[dict] = []
+    chunks: list[
+        dict
+    ] = []
 
     for chunk_file in chunk_files:
 
@@ -178,30 +209,38 @@ def load_chunks(
                     continue
 
                 try:
+
                     chunk = json.loads(
                         line
                     )
 
                 except json.JSONDecodeError as error:
+
                     raise ValueError(
                         f"Invalid JSON in "
                         f"{chunk_file.name} "
                         f"on line {line_number}"
                     ) from error
 
+                # -----------------------------------------
+                # Ignore empty records
+                # -----------------------------------------
+
                 if not chunk.get(
                     "text"
                 ):
                     continue
 
-                source_status = (
+                # -----------------------------------------
+                # Freshness filtering
+                # -----------------------------------------
+
+                source_status = str(
                     chunk.get(
                         "source_status",
-                        ""
+                        "",
                     )
-                    .strip()
-                    .lower()
-                )
+                ).strip().lower()
 
                 if (
                     not include_superseded
@@ -209,6 +248,28 @@ def load_chunks(
                     == "superseded"
                 ):
                     continue
+
+                # -----------------------------------------
+                # Structured-record isolation
+                # -----------------------------------------
+
+                record_type = str(
+                    chunk.get(
+                        "record_type",
+                        "",
+                    )
+                ).strip().lower()
+
+                if (
+                    not include_structured
+                    and record_type
+                    in STRUCTURED_RECORD_TYPES
+                ):
+                    continue
+
+                # -----------------------------------------
+                # Record source file for diagnostics
+                # -----------------------------------------
 
                 chunk[
                     "_chunk_file"
@@ -252,25 +313,51 @@ class BM25Index:
         b: float = BM25_B,
     ) -> None:
 
+        if not chunks:
+            raise ValueError(
+                "Cannot build BM25 index "
+                "without chunks."
+            )
+
         self.chunks = chunks
+
         self.k1 = k1
+
         self.b = b
 
-        self.document_tokens: list[list[str]] = []
+        self.document_tokens: list[
+            list[str]
+        ] = []
 
-        self.term_frequencies: list[Counter[str]] = []
+        self.term_frequencies: list[
+            Counter[str]
+        ] = []
 
-        self.document_frequencies: dict[str, int] = defaultdict(int)
+        self.document_frequencies: dict[
+            str,
+            int,
+        ] = defaultdict(
+            int
+        )
 
-        self.document_lengths: list[int] = []
+        self.document_lengths: list[
+            int
+        ] = []
 
-        self.average_document_length = 0.0
+        self.average_document_length = (
+            0.0
+        )
 
-        self.idf: dict[str, float] = {}
+        self.idf: dict[
+            str,
+            float,
+        ] = {}
 
         self._build_index()
 
-    def _build_index(self) -> None:
+    def _build_index(
+        self,
+    ) -> None:
         """
         Build all statistics required for BM25 scoring.
         """
@@ -278,7 +365,9 @@ class BM25Index:
         for chunk in self.chunks:
 
             tokens = tokenize(
-                chunk["text"]
+                chunk[
+                    "text"
+                ]
             )
 
             self.document_tokens.append(
@@ -302,6 +391,7 @@ class BM25Index:
             )
 
             for term in frequencies:
+
                 self.document_frequencies[
                     term
                 ] += 1
@@ -315,7 +405,8 @@ class BM25Index:
         )
 
         self.average_document_length = (
-            total_length / total_documents
+            total_length
+            / total_documents
             if total_documents
             else 0.0
         )
@@ -325,7 +416,10 @@ class BM25Index:
         ):
 
             # Standard BM25 inverse document frequency.
-            self.idf[term] = math.log(
+
+            self.idf[
+                term
+            ] = math.log(
                 1
                 + (
                     total_documents
@@ -349,26 +443,34 @@ class BM25Index:
 
         score = 0.0
 
-        frequencies = self.term_frequencies[
-            document_index
-        ]
+        frequencies = (
+            self.term_frequencies[
+                document_index
+            ]
+        )
 
-        document_length = self.document_lengths[
-            document_index
-        ]
+        document_length = (
+            self.document_lengths[
+                document_index
+            ]
+        )
 
         query_frequency = Counter(
             query_tokens
         )
 
-        for term, query_count in query_frequency.items():
+        for term, query_count in (
+            query_frequency.items()
+        ):
 
             if term not in frequencies:
                 continue
 
-            term_frequency = frequencies[
-                term
-            ]
+            term_frequency = (
+                frequencies[
+                    term
+                ]
+            )
 
             inverse_document_frequency = (
                 self.idf.get(
@@ -404,6 +506,7 @@ class BM25Index:
             )
 
             # Slightly reward repeated query terms.
+
             score += (
                 term_score
                 * query_count
@@ -420,6 +523,11 @@ class BM25Index:
         Search the MineLens chunk collection.
         """
 
+        if top_k <= 0:
+            raise ValueError(
+                "top_k must be greater than zero."
+            )
+
         query_tokens = tokenize(
             query
         )
@@ -427,7 +535,9 @@ class BM25Index:
         if not query_tokens:
             return []
 
-        results: list[dict] = []
+        results: list[
+            dict
+        ] = []
 
         normalized_query = " ".join(
             query.lower().split()
@@ -446,7 +556,9 @@ class BM25Index:
                 continue
 
             text_normalized = " ".join(
-                chunk["text"]
+                chunk[
+                    "text"
+                ]
                 .lower()
                 .split()
             )
@@ -458,11 +570,13 @@ class BM25Index:
             #     mining licence
             #
             # so give them a modest ranking bonus.
+
             if (
                 normalized_query
                 and normalized_query
                 in text_normalized
             ):
+
                 score *= 1.25
 
             results.append(
@@ -473,7 +587,9 @@ class BM25Index:
             )
 
         results.sort(
-            key=lambda result: result["score"],
+            key=lambda result: result[
+                "score"
+            ],
             reverse=True,
         )
 
@@ -500,7 +616,10 @@ def make_snippet(
         text.split()
     )
 
-    if len(text) <= max_chars:
+    if len(
+        text
+    ) <= max_chars:
+
         return text
 
     query_tokens = tokenize(
@@ -518,6 +637,7 @@ def make_snippet(
         )
 
         if position != -1:
+
             match_positions.append(
                 position
             )
@@ -530,15 +650,20 @@ def make_snippet(
 
         start = max(
             0,
-            center - max_chars // 3,
+            center
+            - max_chars // 3,
         )
 
     else:
+
         start = 0
 
     end = min(
-        len(text),
-        start + max_chars,
+        len(
+            text
+        ),
+        start
+        + max_chars,
     )
 
     snippet = text[
@@ -546,9 +671,16 @@ def make_snippet(
     ].strip()
 
     if start > 0:
-        snippet = "... " + snippet
 
-    if end < len(text):
+        snippet = (
+            "... "
+            + snippet
+        )
+
+    if end < len(
+        text
+    ):
+
         snippet += " ..."
 
     return snippet
@@ -563,21 +695,38 @@ def display_results(
     """
 
     print()
-    print("=" * 70)
-    print("MINELENS ZAMBIA SEARCH")
-    print("=" * 70)
+    print(
+        "=" * 70
+    )
+
+    print(
+        "MINELENS ZAMBIA SEARCH"
+    )
+
+    print(
+        "=" * 70
+    )
 
     print()
-    print(f'Query: "{query}"')
+
+    print(
+        f'Query: "{query}"'
+    )
+
     print()
 
     if not results:
 
-        print("No matching passages found.")
+        print(
+            "No matching passages found."
+        )
+
         return
 
     print(
-        f"Found {len(results)} ranked result(s)."
+        f"Found "
+        f"{len(results)} "
+        f"ranked result(s)."
     )
 
     for rank, result in enumerate(
@@ -585,7 +734,9 @@ def display_results(
         start=1,
     ):
 
-        chunk = result["chunk"]
+        chunk = result[
+            "chunk"
+        ]
 
         page_start = chunk.get(
             "page_start"
@@ -596,42 +747,55 @@ def display_results(
         )
 
         if page_start == page_end:
+
             page_display = str(
                 page_start
             )
+
         else:
+
             page_display = (
-                f"{page_start}-{page_end}"
+                f"{page_start}-"
+                f"{page_end}"
             )
 
         print()
-        print("-" * 70)
-
         print(
-            f"RESULT {rank}"
+            "-" * 70
         )
 
         print(
-            f"Score:    {result['score']:.4f}"
+            f"RESULT "
+            f"{rank}"
         )
 
         print(
-            f"Document: {chunk.get('document')}"
+            f"Score:    "
+            f"{result['score']:.4f}"
         )
 
         print(
-            f"Pages:    {page_display}"
+            f"Document: "
+            f"{chunk.get('document')}"
         )
 
         print(
-            f"Chunk:    {chunk.get('chunk_id')}"
+            f"Pages:    "
+            f"{page_display}"
+        )
+
+        print(
+            f"Chunk:    "
+            f"{chunk.get('chunk_id')}"
         )
 
         print()
 
         print(
             make_snippet(
-                text=chunk["text"],
+                text=chunk[
+                    "text"
+                ],
                 query=query,
             )
         )
@@ -643,12 +807,16 @@ def display_results(
         if source_url:
 
             print()
+
             print(
-                f"Source: {source_url}"
+                f"Source: "
+                f"{source_url}"
             )
 
     print()
-    print("-" * 70)
+    print(
+        "-" * 70
+    )
 
 
 # ---------------------------------------------------------
@@ -667,7 +835,9 @@ def main() -> None:
     parser.add_argument(
         "query",
         nargs="+",
-        help="Search query",
+        help=(
+            "Search query"
+        ),
     )
 
     parser.add_argument(
@@ -679,6 +849,7 @@ def main() -> None:
             f"(default: {DEFAULT_TOP_K})"
         ),
     )
+
     parser.add_argument(
         "--include-superseded",
         action="store_true",
@@ -687,6 +858,17 @@ def main() -> None:
             "in search results."
         ),
     )
+
+    parser.add_argument(
+        "--include-structured",
+        action="store_true",
+        help=(
+            "Include structured record datasets "
+            "in the general document index. "
+            "Primarily intended for diagnostics."
+        ),
+    )
+
     args = parser.parse_args()
 
     query = " ".join(
@@ -694,6 +876,7 @@ def main() -> None:
     )
 
     if args.top_k <= 0:
+
         raise ValueError(
             "--top-k must be greater than zero."
         )
@@ -705,7 +888,10 @@ def main() -> None:
     chunks = load_chunks(
         include_superseded=(
             args.include_superseded
-        )
+        ),
+        include_structured=(
+            args.include_structured
+        ),
     )
 
     index = BM25Index(
@@ -713,7 +899,9 @@ def main() -> None:
     )
 
     print(
-        f"Indexed {len(chunks)} chunks."
+        f"Indexed "
+        f"{len(chunks)} "
+        f"chunks."
     )
 
     results = index.search(
