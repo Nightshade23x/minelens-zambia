@@ -41,9 +41,15 @@ def chunk_key(
     """
 
     return (
-        chunk.get("document"),
-        chunk.get("chunk_id"),
-        chunk.get("document_sha256"),
+        chunk.get(
+            "document"
+        ),
+        chunk.get(
+            "chunk_id"
+        ),
+        chunk.get(
+            "document_sha256"
+        ),
     )
 
 
@@ -62,7 +68,8 @@ def reciprocal_rank(
     """
 
     return 1.0 / (
-        rrf_k + rank
+        rrf_k
+        + rank
     )
 
 
@@ -86,6 +93,11 @@ def hybrid_search(
             "top_k must be greater than zero."
         )
 
+    if candidate_k <= 0:
+        raise ValueError(
+            "candidate_k must be greater than zero."
+        )
+
     candidate_k = max(
         candidate_k,
         top_k,
@@ -95,28 +107,37 @@ def hybrid_search(
     # Retrieve candidates independently
     # -----------------------------------------------------
 
-    bm25_results = bm25_index.search(
-        query=query,
-        top_k=candidate_k,
+    bm25_results = (
+        bm25_index.search(
+            query=query,
+            top_k=candidate_k,
+        )
     )
 
-    semantic_results = semantic_index.search(
-        query=query,
-        top_k=candidate_k,
+    semantic_results = (
+        semantic_index.search(
+            query=query,
+            top_k=candidate_k,
+        )
     )
 
     # -----------------------------------------------------
     # Fuse rankings
     # -----------------------------------------------------
 
-    fused: dict[tuple, dict] = {}
+    fused: dict[
+        tuple,
+        dict,
+    ] = {}
 
     for rank, result in enumerate(
         bm25_results,
         start=1,
     ):
 
-        chunk = result["chunk"]
+        chunk = result[
+            "chunk"
+        ]
 
         key = chunk_key(
             chunk
@@ -124,7 +145,9 @@ def hybrid_search(
 
         if key not in fused:
 
-            fused[key] = {
+            fused[
+                key
+            ] = {
                 "chunk": chunk,
                 "rrf_score": 0.0,
                 "bm25_rank": None,
@@ -133,14 +156,26 @@ def hybrid_search(
                 "semantic_score": None,
             }
 
-        fused[key]["bm25_rank"] = rank
+        fused[
+            key
+        ][
+            "bm25_rank"
+        ] = rank
 
-        fused[key]["bm25_score"] = (
-            result["score"]
-        )
+        fused[
+            key
+        ][
+            "bm25_score"
+        ] = result[
+            "score"
+        ]
 
-        fused[key]["rrf_score"] += (
-            reciprocal_rank(rank)
+        fused[
+            key
+        ][
+            "rrf_score"
+        ] += reciprocal_rank(
+            rank
         )
 
     for rank, result in enumerate(
@@ -148,7 +183,9 @@ def hybrid_search(
         start=1,
     ):
 
-        chunk = result["chunk"]
+        chunk = result[
+            "chunk"
+        ]
 
         key = chunk_key(
             chunk
@@ -156,7 +193,9 @@ def hybrid_search(
 
         if key not in fused:
 
-            fused[key] = {
+            fused[
+                key
+            ] = {
                 "chunk": chunk,
                 "rrf_score": 0.0,
                 "bm25_rank": None,
@@ -165,14 +204,26 @@ def hybrid_search(
                 "semantic_score": None,
             }
 
-        fused[key]["semantic_rank"] = rank
+        fused[
+            key
+        ][
+            "semantic_rank"
+        ] = rank
 
-        fused[key]["semantic_score"] = (
-            result["score"]
-        )
+        fused[
+            key
+        ][
+            "semantic_score"
+        ] = result[
+            "score"
+        ]
 
-        fused[key]["rrf_score"] += (
-            reciprocal_rank(rank)
+        fused[
+            key
+        ][
+            "rrf_score"
+        ] += reciprocal_rank(
+            rank
         )
 
     # -----------------------------------------------------
@@ -190,7 +241,9 @@ def hybrid_search(
         reverse=True,
     )
 
-    return results[:top_k]
+    return results[
+        :top_k
+    ]
 
 
 # ---------------------------------------------------------
@@ -251,7 +304,8 @@ def display_results(
         else:
 
             pages = (
-                f"{page_start}-{page_end}"
+                f"{page_start}-"
+                f"{page_end}"
             )
 
         print()
@@ -267,13 +321,16 @@ def display_results(
         )
 
         if (
-            result["bm25_rank"]
+            result[
+                "bm25_rank"
+            ]
             is not None
         ):
 
             print(
                 "BM25:       "
-                f"rank #{result['bm25_rank']} "
+                f"rank "
+                f"#{result['bm25_rank']} "
                 f"| score "
                 f"{result['bm25_score']:.4f}"
             )
@@ -281,17 +338,21 @@ def display_results(
         else:
 
             print(
-                "BM25:       not in candidates"
+                "BM25:       "
+                "not in candidates"
             )
 
         if (
-            result["semantic_rank"]
+            result[
+                "semantic_rank"
+            ]
             is not None
         ):
 
             print(
                 "Semantic:   "
-                f"rank #{result['semantic_rank']} "
+                f"rank "
+                f"#{result['semantic_rank']} "
                 f"| similarity "
                 f"{result['semantic_score']:.4f}"
             )
@@ -299,7 +360,8 @@ def display_results(
         else:
 
             print(
-                "Semantic:   not in candidates"
+                "Semantic:   "
+                "not in candidates"
             )
 
         print(
@@ -308,7 +370,8 @@ def display_results(
         )
 
         print(
-            f"Pages:      {pages}"
+            f"Pages:      "
+            f"{pages}"
         )
 
         print(
@@ -320,7 +383,9 @@ def display_results(
 
         print(
             make_snippet(
-                text=chunk["text"],
+                text=chunk[
+                    "text"
+                ],
                 query=query,
             )
         )
@@ -332,8 +397,10 @@ def display_results(
         if source_url:
 
             print()
+
             print(
-                f"Source: {source_url}"
+                f"Source: "
+                f"{source_url}"
             )
 
     print()
@@ -356,7 +423,9 @@ def main() -> None:
     parser.add_argument(
         "query",
         nargs="+",
-        help="Search query",
+        help=(
+            "Search query"
+        ),
     )
 
     parser.add_argument(
@@ -379,7 +448,26 @@ def main() -> None:
         ),
     )
 
+    parser.add_argument(
+        "--include-superseded",
+        action="store_true",
+        help=(
+            "Include superseded historical "
+            "sources in hybrid search."
+        ),
+    )
+
     args = parser.parse_args()
+
+    if args.top_k <= 0:
+        raise ValueError(
+            "--top-k must be greater than zero."
+        )
+
+    if args.candidate_k <= 0:
+        raise ValueError(
+            "--candidate-k must be greater than zero."
+        )
 
     query = " ".join(
         args.query
@@ -389,7 +477,11 @@ def main() -> None:
         "Loading MineLens chunks..."
     )
 
-    chunks = load_chunks()
+    chunks = load_chunks(
+        include_superseded=(
+            args.include_superseded
+        )
+    )
 
     print(
         f"Loaded {len(chunks)} chunks."
@@ -411,8 +503,19 @@ def main() -> None:
     # Semantic
     # -----------------------------------------------------
 
-    semantic_index = SemanticIndex(
-        chunks
+    cache_variant = (
+        "include-superseded"
+        if args.include_superseded
+        else "current"
+    )
+
+    semantic_index = (
+        SemanticIndex(
+            chunks,
+            cache_variant=(
+                cache_variant
+            ),
+        )
     )
 
     if not load_embedding_cache(
@@ -434,7 +537,9 @@ def main() -> None:
         bm25_index=bm25_index,
         semantic_index=semantic_index,
         top_k=args.top_k,
-        candidate_k=args.candidate_k,
+        candidate_k=(
+            args.candidate_k
+        ),
     )
 
     display_results(

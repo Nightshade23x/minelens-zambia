@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 
 from pathlib import Path
@@ -8,8 +9,11 @@ from pathlib import Path
 import numpy as np
 from fastembed import TextEmbedding
 
-from app.search import load_chunks, make_snippet
-import hashlib
+from app.search import (
+    load_chunks,
+    make_snippet,
+)
+
 
 # ---------------------------------------------------------
 # Project paths
@@ -17,17 +21,23 @@ import hashlib
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"
+PROCESSED_DATA_DIR = (
+    PROJECT_ROOT
+    / "data"
+    / "processed"
+)
 
 EMBEDDING_CACHE_DIR = (
     PROCESSED_DATA_DIR
     / "embeddings"
 )
+
 MODEL_CACHE_DIR = (
     PROJECT_ROOT
     / ".cache"
     / "fastembed"
 )
+
 LOCAL_MODEL_DIR = (
     MODEL_CACHE_DIR
     / "fast-all-MiniLM-L6-v2"
@@ -38,7 +48,9 @@ LOCAL_MODEL_DIR = (
 # Configuration
 # ---------------------------------------------------------
 
-DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+DEFAULT_MODEL = (
+    "sentence-transformers/all-MiniLM-L6-v2"
+)
 
 DEFAULT_TOP_K = 5
 
@@ -46,6 +58,7 @@ DEFAULT_TOP_K = 5
 # ---------------------------------------------------------
 # Vector helpers
 # ---------------------------------------------------------
+
 def chunk_text_sha256(
     text: str,
 ) -> str:
@@ -59,31 +72,8 @@ def chunk_text_sha256(
             "utf-8"
         )
     ).hexdigest()
-def chunk_cache_identity(
-    chunk: dict,
-) -> dict:
-    """
-    Return the identity of the exact chunk text used
-    to generate an embedding.
-    """
 
-    return {
-        "document": chunk.get(
-            "document"
-        ),
-        "chunk_id": chunk.get(
-            "chunk_id"
-        ),
-        "document_sha256": chunk.get(
-            "document_sha256"
-        ),
-        "text_sha256": chunk_text_sha256(
-            chunk.get(
-                "text",
-                ""
-            )
-        ),
-    }
+
 def chunk_cache_identity(
     chunk: dict,
 ) -> dict:
@@ -108,21 +98,25 @@ def chunk_cache_identity(
         "text_sha256": chunk_text_sha256(
             chunk.get(
                 "text",
-                ""
+                "",
             )
         ),
     }
+
+
 def normalize_vector(
     vector: np.ndarray,
 ) -> np.ndarray:
     """
     Convert a vector to unit length.
 
-    Normalized vectors make cosine-similarity calculations
-    simple and stable.
+    Normalized vectors make cosine-similarity
+    calculations simple and stable.
     """
 
-    norm = np.linalg.norm(vector)
+    norm = np.linalg.norm(
+        vector
+    )
 
     if norm == 0:
         return vector
@@ -138,8 +132,13 @@ def cosine_similarity(
     Calculate cosine similarity between two vectors.
     """
 
-    vector_a = normalize_vector(vector_a)
-    vector_b = normalize_vector(vector_b)
+    vector_a = normalize_vector(
+        vector_a
+    )
+
+    vector_b = normalize_vector(
+        vector_b
+    )
 
     return float(
         np.dot(
@@ -167,6 +166,7 @@ class SemanticIndex:
         self,
         chunks: list[dict],
         model_name: str = DEFAULT_MODEL,
+        cache_variant: str = "current",
     ) -> None:
 
         if not chunks:
@@ -177,6 +177,7 @@ class SemanticIndex:
 
         self.chunks = chunks
         self.model_name = model_name
+        self.cache_variant = cache_variant
 
         print(
             f"Loading embedding model: "
@@ -184,27 +185,34 @@ class SemanticIndex:
         )
 
         MODEL_CACHE_DIR.mkdir(
-    parents=True,
-    exist_ok=True,
-)
+            parents=True,
+            exist_ok=True,
+        )
 
         if not LOCAL_MODEL_DIR.exists():
             raise FileNotFoundError(
-                "Local embedding model was not found at:\n"
+                "Local embedding model was not "
+                "found at:\n"
                 f"{LOCAL_MODEL_DIR}\n\n"
-                "Download and extract the model before running "
-                "semantic search."
+                "Download and extract the model "
+                "before running semantic search."
             )
 
         self.model = TextEmbedding(
             model_name=model_name,
-            specific_model_path=str(LOCAL_MODEL_DIR),
+            specific_model_path=str(
+                LOCAL_MODEL_DIR
+            ),
         )
 
-        self.embeddings: np.ndarray | None = None
+        self.embeddings: (
+            np.ndarray
+            | None
+        ) = None
 
-
-    def build(self) -> None:
+    def build(
+        self,
+    ) -> None:
         """
         Generate embeddings for all MineLens chunks.
         """
@@ -220,7 +228,9 @@ class SemanticIndex:
         )
 
         vectors = list(
-            self.model.embed(texts)
+            self.model.embed(
+                texts
+            )
         )
 
         self.embeddings = np.array(
@@ -239,7 +249,6 @@ class SemanticIndex:
         print(
             "Semantic index ready."
         )
-
 
     def embed_query(
         self,
@@ -268,7 +277,6 @@ class SemanticIndex:
             )
         )
 
-
     def search(
         self,
         query: str,
@@ -295,6 +303,7 @@ class SemanticIndex:
 
         # Embeddings are normalized, so the dot product
         # is equivalent to cosine similarity.
+
         scores = (
             self.embeddings
             @ query_vector
@@ -330,26 +339,61 @@ class SemanticIndex:
 
 def get_cache_paths(
     model_name: str,
+    cache_variant: str = "current",
 ) -> tuple[Path, Path]:
     """
     Return paths used to store generated vectors and
     information about the chunks they correspond to.
+
+    Current-only and historical-inclusive searches
+    use separate embedding caches.
     """
 
     safe_model_name = (
         model_name
-        .replace("/", "_")
-        .replace("\\", "_")
+        .replace(
+            "/",
+            "_",
+        )
+        .replace(
+            "\\",
+            "_",
+        )
     )
+
+    if cache_variant == "current":
+
+        cache_name = (
+            safe_model_name
+        )
+
+    else:
+
+        safe_variant = (
+            cache_variant
+            .replace(
+                "/",
+                "_",
+            )
+            .replace(
+                "\\",
+                "_",
+            )
+        )
+
+        cache_name = (
+            f"{safe_model_name}_"
+            f"{safe_variant}"
+        )
 
     vector_path = (
         EMBEDDING_CACHE_DIR
-        / f"{safe_model_name}.npy"
+        / f"{cache_name}.npy"
     )
 
     metadata_path = (
         EMBEDDING_CACHE_DIR
-        / f"{safe_model_name}.json"
+        / f"{cache_name}.json"
     )
 
     return (
@@ -362,8 +406,8 @@ def save_embedding_cache(
     index: SemanticIndex,
 ) -> None:
     """
-    Save generated embeddings so they do not need to be
-    recalculated every time MineLens starts.
+    Save generated embeddings so they do not need
+    to be recalculated every time MineLens starts.
     """
 
     if index.embeddings is None:
@@ -378,7 +422,8 @@ def save_embedding_cache(
 
     vector_path, metadata_path = (
         get_cache_paths(
-            index.model_name
+            index.model_name,
+            index.cache_variant,
         )
     )
 
@@ -389,6 +434,9 @@ def save_embedding_cache(
 
     metadata = {
         "model": index.model_name,
+        "cache_variant": (
+            index.cache_variant
+        ),
         "chunk_count": len(
             index.chunks
         ),
@@ -398,7 +446,8 @@ def save_embedding_cache(
             )
             for chunk in index.chunks
         ],
-    }    
+    }
+
     with metadata_path.open(
         "w",
         encoding="utf-8",
@@ -411,7 +460,7 @@ def save_embedding_cache(
         )
 
     print(
-        f"Embedding cache saved to:"
+        "Embedding cache saved to:"
     )
 
     print(
@@ -423,13 +472,14 @@ def load_embedding_cache(
     index: SemanticIndex,
 ) -> bool:
     """
-    Load embeddings from disk if the cache still matches
-    the current MineLens chunk collection.
+    Load embeddings from disk if the cache still
+    matches the current MineLens chunk collection.
     """
 
     vector_path, metadata_path = (
         get_cache_paths(
-            index.model_name
+            index.model_name,
+            index.cache_variant,
         )
     )
 
@@ -452,35 +502,53 @@ def load_embedding_cache(
 
         cached_chunks = metadata.get(
             "chunks",
-            []
+            [],
         )
 
         current_chunks = [
             chunk_cache_identity(
                 chunk
-            )   
+            )
             for chunk in index.chunks
-        ]                
+        ]
 
         if (
-            metadata.get("model")
+            metadata.get(
+                "model"
+            )
             != index.model_name
         ):
             return False
 
-        if cached_chunks != current_chunks:
+        if (
+            metadata.get(
+                "cache_variant",
+                "current",
+            )
+            != index.cache_variant
+        ):
+            return False
+
+        if (
+            cached_chunks
+            != current_chunks
+        ):
             return False
 
         embeddings = np.load(
             vector_path
         )
 
-        if len(embeddings) != len(
+        if len(
+            embeddings
+        ) != len(
             index.chunks
         ):
             return False
 
-        index.embeddings = embeddings
+        index.embeddings = (
+            embeddings
+        )
 
         print(
             "Loaded cached embeddings."
@@ -558,7 +626,8 @@ def display_results(
         else:
 
             pages = (
-                f"{page_start}-{page_end}"
+                f"{page_start}-"
+                f"{page_end}"
             )
 
         print()
@@ -592,7 +661,9 @@ def display_results(
 
         print(
             make_snippet(
-                text=chunk["text"],
+                text=chunk[
+                    "text"
+                ],
                 query=query,
             )
         )
@@ -604,6 +675,7 @@ def display_results(
         if source_url:
 
             print()
+
             print(
                 f"Source: "
                 f"{source_url}"
@@ -629,7 +701,9 @@ def main() -> None:
     parser.add_argument(
         "query",
         nargs="+",
-        help="Semantic search query",
+        help=(
+            "Semantic search query"
+        ),
     )
 
     parser.add_argument(
@@ -651,24 +725,49 @@ def main() -> None:
         ),
     )
 
+    parser.add_argument(
+        "--include-superseded",
+        action="store_true",
+        help=(
+            "Include superseded historical "
+            "sources in semantic search."
+        ),
+    )
+
     args = parser.parse_args()
 
     query = " ".join(
         args.query
     )
 
+    if args.top_k <= 0:
+        raise ValueError(
+            "--top-k must be greater than zero."
+        )
+
     print(
         "Loading MineLens chunks..."
     )
 
-    chunks = load_chunks()
+    chunks = load_chunks(
+        include_superseded=(
+            args.include_superseded
+        )
+    )
 
     print(
         f"Loaded {len(chunks)} chunks."
     )
 
+    cache_variant = (
+        "include-superseded"
+        if args.include_superseded
+        else "current"
+    )
+
     index = SemanticIndex(
-        chunks
+        chunks,
+        cache_variant=cache_variant,
     )
 
     cache_loaded = False
@@ -698,7 +797,6 @@ def main() -> None:
         query=query,
         results=results,
     )
-
 
 
 if __name__ == "__main__":
