@@ -8,6 +8,9 @@ from pathlib import Path
 from ingestion.chunk import chunk_document
 from ingestion.download import download_document
 from ingestion.parse_html import parse_html
+from ingestion.parse_licensing_results import (
+    parse_licensing_results,
+)
 from ingestion.parse_pdf import parse_pdf
 
 
@@ -81,13 +84,21 @@ def load_sources(
         "pdf",
         "html",
     }
+
     supported_statuses = {
         "current",
         "historical",
         "superseded",
-    }    
+    }
 
-    seen_ids: set[str] = set()
+    supported_parsers = {
+        "generic",
+        "licensing_results",
+    }
+
+    seen_ids: set[
+        str
+    ] = set()
 
     for source in sources:
 
@@ -127,9 +138,15 @@ def load_sources(
             source_id
         )
 
-        source_type = source[
-            "source_type"
-        ].lower()
+        # -------------------------------------------------
+        # Source type
+        # -------------------------------------------------
+
+        source_type = str(
+            source[
+                "source_type"
+            ]
+        ).lower()
 
         if (
             source_type
@@ -142,17 +159,82 @@ def load_sources(
                 f"'{source_id}'."
             )
 
-        # Normalize the value once so the rest of
-        # the pipeline does not need to handle
-        # PDF/pdf/Html/etc.
-
         source[
             "source_type"
         ] = source_type
 
-        filename = source[
-            "filename"
-        ].lower()
+        # -------------------------------------------------
+        # Freshness status
+        # -------------------------------------------------
+
+        source_status = str(
+            source[
+                "status"
+            ]
+        ).lower()
+
+        if (
+            source_status
+            not in supported_statuses
+        ):
+            raise ValueError(
+                f"Unsupported source status "
+                f"'{source_status}' "
+                f"for source "
+                f"'{source_id}'."
+            )
+
+        source[
+            "status"
+        ] = source_status
+
+        # -------------------------------------------------
+        # Parser
+        # -------------------------------------------------
+
+        parser_name = str(
+            source.get(
+                "parser",
+                "generic",
+            )
+        ).lower()
+
+        if (
+            parser_name
+            not in supported_parsers
+        ):
+            raise ValueError(
+                f"Unsupported parser "
+                f"'{parser_name}' "
+                f"for source "
+                f"'{source_id}'."
+            )
+
+        if (
+            parser_name
+            == "licensing_results"
+            and source_type
+            != "html"
+        ):
+            raise ValueError(
+                "The licensing_results parser "
+                "can only be used with HTML "
+                f"sources: '{source_id}'."
+            )
+
+        source[
+            "parser"
+        ] = parser_name
+
+        # -------------------------------------------------
+        # Filename
+        # -------------------------------------------------
+
+        filename = str(
+            source[
+                "filename"
+            ]
+        ).lower()
 
         if (
             source_type == "pdf"
@@ -163,7 +245,7 @@ def load_sources(
             raise ValueError(
                 f"PDF source "
                 f"'{source_id}' "
-                f"must use a .pdf filename."
+                "must use a .pdf filename."
             )
 
         if (
@@ -178,30 +260,12 @@ def load_sources(
             raise ValueError(
                 f"HTML source "
                 f"'{source_id}' "
-                f"must use a .html "
-                f"or .htm filename."
+                "must use a .html "
+                "or .htm filename."
             )
 
-    
-    source_status = source[
-        "status"
-    ].lower()
-
-    if (
-        source_status
-        not in supported_statuses
-    ):
-        raise ValueError(
-            f"Unsupported source status "
-            f"'{source_status}' "
-            f"for source "
-            f"'{source_id}'."
-        )
-
-    source[
-        "status"
-    ] = source_status
     return sources
+
 
 # ---------------------------------------------------------
 # Utilities
@@ -230,12 +294,14 @@ def count_jsonl_records(
                 count += 1
 
     return count
+
+
 def source_provenance(
     source: dict,
 ) -> dict:
     """
-    Return the canonical provenance metadata attached
-    to MineLens records for a source.
+    Return canonical provenance metadata attached
+    to MineLens records.
     """
 
     return {
@@ -254,6 +320,10 @@ def source_provenance(
         "source_type": source[
             "source_type"
         ],
+        "parser": source.get(
+            "parser",
+            "generic",
+        ),
         "source_status": source[
             "status"
         ],
@@ -272,6 +342,7 @@ def source_provenance(
         ),
     }
 
+
 # ---------------------------------------------------------
 # Metadata enrichment
 # ---------------------------------------------------------
@@ -281,8 +352,8 @@ def enrich_metadata(
     source: dict,
 ) -> None:
     """
-    Add MineLens-specific registry information to the
-    metadata associated with a downloaded source.
+    Add MineLens registry metadata to a downloaded
+    source's metadata file.
     """
 
     metadata_path = (
@@ -319,25 +390,28 @@ def enrich_metadata(
             metadata,
             file,
             indent=4,
+            ensure_ascii=False,
         )
+
 
 def enrich_jsonl_records(
     path: Path,
     source: dict,
 ) -> None:
     """
-    Attach canonical source provenance to every record
-    in a MineLens JSONL file.
+    Attach canonical provenance to every JSONL record.
 
-    The file is rewritten atomically through a temporary
-    file so a failed write does not corrupt the original.
+    A temporary file is used so failed writes do not
+    corrupt the existing processed file.
     """
 
     if not path.exists():
         return
 
-    provenance = source_provenance(
-        source
+    provenance = (
+        source_provenance(
+            source
+        )
     )
 
     temporary_path = (
@@ -384,6 +458,8 @@ def enrich_jsonl_records(
     temporary_path.replace(
         path
     )
+
+
 # ---------------------------------------------------------
 # PDF ingestion
 # ---------------------------------------------------------
@@ -391,13 +467,12 @@ def enrich_jsonl_records(
 def ingest_pdf_source(
     source: dict,
     overwrite: bool = False,
-) -> tuple[Path, Path]:
+) -> tuple[
+    Path,
+    Path,
+]:
     """
     Download and parse one PDF source.
-
-    Returns:
-        raw_path
-        pages_path
     """
 
     raw_path = download_document(
@@ -427,18 +502,18 @@ def ingest_pdf_source(
 
 
 # ---------------------------------------------------------
-# HTML ingestion
+# Generic HTML ingestion
 # ---------------------------------------------------------
 
 def ingest_html_source(
     source: dict,
     overwrite: bool = False,
-) -> tuple[Path, Path]:
+) -> tuple[
+    Path,
+    Path,
+]:
     """
-    Download and parse one HTML source.
-
-    parse_html() handles both downloading and parsing
-    the webpage.
+    Download and parse one normal HTML source.
     """
 
     pages_path = parse_html(
@@ -470,6 +545,60 @@ def ingest_html_source(
 
 
 # ---------------------------------------------------------
+# Structured licensing-results ingestion
+# ---------------------------------------------------------
+
+def ingest_licensing_results_source(
+    source: dict,
+    overwrite: bool = False,
+) -> tuple[
+    Path,
+    Path,
+    Path,
+]:
+    """
+    Parse a licensing-results webpage into one
+    structured record and one search chunk per
+    application.
+    """
+
+    (
+        raw_path,
+        records_path,
+        chunks_path,
+    ) = parse_licensing_results(
+        url=source[
+            "url"
+        ],
+        filename=source[
+            "filename"
+        ],
+        overwrite=overwrite,
+    )
+
+    enrich_metadata(
+        document_path=raw_path,
+        source=source,
+    )
+
+    enrich_jsonl_records(
+        path=records_path,
+        source=source,
+    )
+
+    enrich_jsonl_records(
+        path=chunks_path,
+        source=source,
+    )
+
+    return (
+        raw_path,
+        records_path,
+        chunks_path,
+    )
+
+
+# ---------------------------------------------------------
 # One source
 # ---------------------------------------------------------
 
@@ -478,12 +607,8 @@ def ingest_source(
     overwrite: bool = False,
 ) -> dict:
     """
-    Run one source through the complete MineLens
+    Run one source through the appropriate MineLens
     ingestion pipeline.
-
-    Supported source types:
-        PDF
-        HTML
     """
 
     source_id = source[
@@ -493,6 +618,11 @@ def ingest_source(
     source_type = source[
         "source_type"
     ]
+
+    parser_name = source.get(
+        "parser",
+        "generic",
+    )
 
     print()
     print("=" * 72)
@@ -519,10 +649,69 @@ def ingest_source(
         f"{source_type}"
     )
 
+    print(
+        f"Parser:      "
+        f"{parser_name}"
+    )
+
     print()
 
     # -----------------------------------------------------
-    # Source-specific ingestion
+    # Structured licensing HTML
+    # -----------------------------------------------------
+
+    if (
+        source_type == "html"
+        and parser_name
+        == "licensing_results"
+    ):
+
+        (
+            raw_path,
+            records_path,
+            chunks_path,
+        ) = (
+            ingest_licensing_results_source(
+                source=source,
+                overwrite=overwrite,
+            )
+        )
+
+        chunk_count = (
+            count_jsonl_records(
+                chunks_path
+            )
+        )
+
+        if chunk_count == 0:
+            raise ValueError(
+                "Structured licensing parser "
+                "produced zero records."
+            )
+
+        return {
+            "id": source_id,
+            "status": "success",
+            "source_type": (
+                source_type
+            ),
+            "parser": parser_name,
+            "raw": str(
+                raw_path
+            ),
+            "records": str(
+                records_path
+            ),
+            "chunks": str(
+                chunks_path
+            ),
+            "chunk_count": (
+                chunk_count
+            ),
+        }
+
+    # -----------------------------------------------------
+    # Normal PDF / HTML route
     # -----------------------------------------------------
 
     if source_type == "pdf":
@@ -545,31 +734,34 @@ def ingest_source(
 
     else:
 
-        # load_sources() should prevent this path,
-        # but retaining the guard makes ingest_source()
-        # safe when called directly.
-
         raise ValueError(
             f"Unsupported source type: "
             f"{source_type}"
         )
 
     # -----------------------------------------------------
-    # Chunk
+    # Provenance on parsed records
     # -----------------------------------------------------
+
     enrich_jsonl_records(
         path=pages_path,
         source=source,
     )
 
+    # -----------------------------------------------------
+    # Standard chunking
+    # -----------------------------------------------------
+
     chunks_path = chunk_document(
         input_path=pages_path,
         overwrite=overwrite,
     )
+
     enrich_jsonl_records(
         path=chunks_path,
         source=source,
     )
+
     chunk_count = (
         count_jsonl_records(
             chunks_path
@@ -577,7 +769,7 @@ def ingest_source(
     )
 
     # -----------------------------------------------------
-    # Empty document handling
+    # Empty document
     # -----------------------------------------------------
 
     if chunk_count == 0:
@@ -598,7 +790,10 @@ def ingest_source(
             return {
                 "id": source_id,
                 "status": "needs_ocr",
-                "source_type": source_type,
+                "source_type": (
+                    source_type
+                ),
+                "parser": parser_name,
                 "raw": str(
                     raw_path
                 ),
@@ -616,14 +811,13 @@ def ingest_source(
             "searchable chunks."
         )
 
-    # -----------------------------------------------------
-    # Success
-    # -----------------------------------------------------
-
     return {
         "id": source_id,
         "status": "success",
-        "source_type": source_type,
+        "source_type": (
+            source_type
+        ),
+        "parser": parser_name,
         "raw": str(
             raw_path
         ),
@@ -633,7 +827,9 @@ def ingest_source(
         "chunks": str(
             chunks_path
         ),
-        "chunk_count": chunk_count,
+        "chunk_count": (
+            chunk_count
+        ),
     }
 
 
@@ -643,14 +839,19 @@ def ingest_source(
 
 def ingest_sources(
     sources: list[dict],
-    source_ids: set[str] | None = None,
+    source_ids: (
+        set[str]
+        | None
+    ) = None,
     overwrite: bool = False,
 ) -> list[dict]:
     """
     Ingest all enabled sources, or a selected subset.
     """
 
-    results: list[dict] = []
+    results: list[
+        dict
+    ] = []
 
     for source in sources:
 
@@ -694,8 +895,14 @@ def ingest_sources(
                     "id"
                 ],
                 "status": "failed",
-                "source_type": source.get(
-                    "source_type"
+                "source_type": (
+                    source.get(
+                        "source_type"
+                    )
+                ),
+                "parser": source.get(
+                    "parser",
+                    "generic",
                 ),
                 "error": str(
                     error
@@ -779,8 +986,11 @@ def display_summary(
             print(
                 f"  [OK] "
                 f"{result['id']} "
-                f"({result['source_type']}, "
-                f"{result['chunk_count']} chunks)"
+                f"("
+                f"{result['source_type']}, "
+                f"{result['parser']}, "
+                f"{result['chunk_count']} "
+                f"chunks)"
             )
 
     if needs_ocr:

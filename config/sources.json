@@ -90,6 +90,33 @@
         "enabled": true
     },
     {
+        "id": "geological_minerals_development_act_2025",
+        "title": "Geological and Minerals Development Act 2025",
+        "agency": "National Assembly of Zambia",
+        "document_type": "legislation",
+        "source_type": "pdf",
+        "status": "current",
+        "published_date": "2025-04-15",
+        "effective_date": null,
+        "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Acts%20No.%202%20of%202025%2C%20The%20Geological%20Minerals%20Development.pdf",
+        "filename": "zambia_geological_minerals_development_act_2025.pdf",
+        "enabled": true
+    },
+    {
+        "id": "licensing_committee_results_june_2026",
+        "title": "Results of the 1st Mining and Non-Mining Rights Licensing Committee Meeting - June 2026",
+        "agency": "Minerals Regulation Commission",
+        "document_type": "licensing_results",
+        "source_type": "html",
+        "parser": "licensing_results",
+        "status": "current",
+        "published_date": "2026-08-25",
+        "effective_date": null,
+        "url": "https://www.mmmd.gov.zm/?p=6561",
+        "filename": "zambia_licensing_committee_results_june_2026.html",
+        "enabled": true
+    },
+    {
         "id": "mining_fees_area_charges_2024",
         "title": "Prescribed Application Fees and Area Charges 2024",
         "agency": "Ministry of Mines and Minerals Development",
