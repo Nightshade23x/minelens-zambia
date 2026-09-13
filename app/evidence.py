@@ -11,7 +11,7 @@ DEFAULT_MAX_EVIDENCE = 5
 
 DEFAULT_MAX_TEXT_CHARS = 1800
 
-
+EXPANDED_MAX_TEXT_CHARS = 5000
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
@@ -88,7 +88,6 @@ def truncate_text(
 # ---------------------------------------------------------
 # Document evidence
 # ---------------------------------------------------------
-
 def document_result_to_evidence(
     result: dict,
     source_number: int,
@@ -99,6 +98,10 @@ def document_result_to_evidence(
     """
     Convert one hybrid document result into the common
     MineLens evidence format.
+
+    If retrieval attached sequential context chunks, they
+    are merged into this evidence source. This is useful
+    when a list or section crosses a chunk boundary.
     """
 
     chunk = result.get(
@@ -106,14 +109,130 @@ def document_result_to_evidence(
         {},
     )
 
-    page_display = format_pages(
-        chunk.get(
-            "page_start"
-        ),
-        chunk.get(
-            "page_end"
-        ),
+    context_chunks = result.get(
+        "context_chunks",
+        [],
     )
+
+    if not isinstance(
+        context_chunks,
+        list,
+    ):
+
+        context_chunks = []
+
+    combined_chunks = [
+        chunk,
+        *[
+            context_chunk
+            for context_chunk
+            in context_chunks
+            if isinstance(
+                context_chunk,
+                dict,
+            )
+        ],
+    ]
+
+    page_starts = [
+        item.get(
+            "page_start"
+        )
+        for item in combined_chunks
+        if item.get(
+            "page_start"
+        )
+        is not None
+    ]
+
+    page_ends = [
+        item.get(
+            "page_end"
+        )
+        for item in combined_chunks
+        if item.get(
+            "page_end"
+        )
+        is not None
+    ]
+
+    if page_starts:
+
+        combined_page_start = min(
+            page_starts
+        )
+
+    else:
+
+        combined_page_start = (
+            chunk.get(
+                "page_start"
+            )
+        )
+
+    if page_ends:
+
+        combined_page_end = max(
+            page_ends
+        )
+
+    else:
+
+        combined_page_end = (
+            chunk.get(
+                "page_end"
+            )
+        )
+
+    page_display = format_pages(
+        combined_page_start,
+        combined_page_end,
+    )
+
+    text_parts = [
+        clean_text(
+            item.get(
+                "text",
+                "",
+            )
+        )
+        for item in combined_chunks
+        if clean_text(
+            item.get(
+                "text",
+                "",
+            )
+        )
+    ]
+
+    combined_text = "\n\n".join(
+        text_parts
+    )
+
+    effective_max_chars = (
+        max_text_chars
+    )
+
+    if context_chunks:
+
+        effective_max_chars = max(
+            effective_max_chars,
+            EXPANDED_MAX_TEXT_CHARS,
+        )
+
+    context_chunk_ids = [
+        clean_text(
+            item.get(
+                "chunk_id"
+            )
+        )
+        for item in context_chunks
+        if clean_text(
+            item.get(
+                "chunk_id"
+            )
+        )
+    ]
 
     return {
         "source_id": (
@@ -147,6 +266,9 @@ def document_result_to_evidence(
                 "chunk_id"
             )
         ),
+        "context_chunk_ids": (
+            context_chunk_ids
+        ),
         "source_url": clean_text(
             chunk.get(
                 "source_url"
@@ -163,12 +285,9 @@ def document_result_to_evidence(
             )
         ),
         "text": truncate_text(
-            chunk.get(
-                "text",
-                "",
-            ),
+            combined_text,
             max_chars=(
-                max_text_chars
+                effective_max_chars
             ),
         ),
         "retrieval": {
@@ -199,7 +318,6 @@ def document_result_to_evidence(
             ),
         },
     }
-
 
 # ---------------------------------------------------------
 # Licensing evidence

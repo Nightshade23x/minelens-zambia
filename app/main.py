@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import argparse
 
+from app.evidence import (
+    normalize_evidence,
+)
+
 from app.hybrid import (
     DEFAULT_CANDIDATE_K,
     display_results as display_hybrid_results,
@@ -9,6 +13,11 @@ from app.hybrid import (
 
 from app.licensing_search import (
     display_results as display_licensing_results,
+)
+
+from app.rag import (
+    display_answer,
+    answer_from_evidence,
 )
 
 from app.router import (
@@ -25,6 +34,8 @@ from app.router import (
 
 DEFAULT_TOP_K = 5
 
+DEFAULT_EVIDENCE_K = 3
+
 
 # ---------------------------------------------------------
 # Display
@@ -35,21 +46,37 @@ def display_route(
     route: str,
     reason: str,
 ) -> None:
-    """
-    Display the routing decision before retrieval.
-    """
 
     print()
-    print("=" * 72)
-    print("MINELENS ZAMBIA")
-    print("=" * 72)
+
+    print(
+        "=" * 72
+    )
+
+    print(
+        "MINELENS ZAMBIA"
+    )
+
+    print(
+        "=" * 72
+    )
 
     print()
-    print(f'Query: "{query}"')
+
+    print(
+        f'Query: "{query}"'
+    )
 
     print()
-    print(f"Route:  {route}")
-    print(f"Reason: {reason}")
+
+    print(
+        f"Route:  {route}"
+    )
+
+    print(
+        f"Reason: {reason}"
+    )
+
     print()
 
 
@@ -61,8 +88,8 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(
         description=(
-            "MineLens Zambia unified mining "
-            "intelligence search."
+            "MineLens Zambia mining "
+            "intelligence assistant."
         )
     )
 
@@ -70,7 +97,7 @@ def main() -> None:
         "query",
         nargs="+",
         help=(
-            "Mining question or search query"
+            "Mining question"
         ),
     )
 
@@ -79,8 +106,18 @@ def main() -> None:
         type=int,
         default=DEFAULT_TOP_K,
         help=(
-            "Maximum number of results "
-            f"(default: {DEFAULT_TOP_K})"
+            "Number of retrieval "
+            "results"
+        ),
+    )
+
+    parser.add_argument(
+        "--evidence-k",
+        type=int,
+        default=DEFAULT_EVIDENCE_K,
+        help=(
+            "Number of retrieved "
+            "items supplied to RAG"
         ),
     )
 
@@ -89,9 +126,8 @@ def main() -> None:
         type=int,
         default=DEFAULT_CANDIDATE_K,
         help=(
-            "Document candidates retrieved "
-            "from BM25 and semantic search "
-            "before hybrid fusion"
+            "Hybrid retrieval "
+            "candidate count"
         ),
     )
 
@@ -103,32 +139,52 @@ def main() -> None:
             ROUTE_LICENSING,
         ],
         default="auto",
+    )
+
+    parser.add_argument(
+        "--model",
         help=(
-            "Override automatic routing "
-            "(default: auto)"
+            "Explicit installed "
+            "Ollama model"
+        ),
+    )
+
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help=(
+            "Show raw retrieval "
+            "results instead of "
+            "generating an answer"
         ),
     )
 
     parser.add_argument(
         "--include-superseded",
         action="store_true",
-        help=(
-            "Include superseded historical "
-            "documents when the query routes "
-            "to document search."
-        ),
     )
 
     args = parser.parse_args()
 
     if args.top_k <= 0:
+
         raise ValueError(
-            "--top-k must be greater than zero."
+            "--top-k must be "
+            "greater than zero."
+        )
+
+    if args.evidence_k <= 0:
+
+        raise ValueError(
+            "--evidence-k must be "
+            "greater than zero."
         )
 
     if args.candidate_k <= 0:
+
         raise ValueError(
-            "--candidate-k must be greater than zero."
+            "--candidate-k must be "
+            "greater than zero."
         )
 
     query = " ".join(
@@ -136,7 +192,7 @@ def main() -> None:
     )
 
     # -----------------------------------------------------
-    # Determine route for display
+    # Route
     # -----------------------------------------------------
 
     if args.route == "auto":
@@ -150,14 +206,18 @@ def main() -> None:
     else:
 
         route_info = {
-            "route": args.route,
+            "route": (
+                args.route
+            ),
             "reason": (
                 "Route selected manually "
                 "using --route."
             ),
         }
 
-        force_route = args.route
+        force_route = (
+            args.route
+        )
 
     display_route(
         query=query,
@@ -170,46 +230,83 @@ def main() -> None:
     )
 
     # -----------------------------------------------------
-    # Execute search
+    # Retrieval
     # -----------------------------------------------------
 
     result = search_mine(
         query=query,
         top_k=args.top_k,
-        candidate_k=args.candidate_k,
+        candidate_k=(
+            args.candidate_k
+        ),
         include_superseded=(
             args.include_superseded
         ),
-        force_route=force_route,
+        force_route=(
+            force_route
+        ),
     )
 
     # -----------------------------------------------------
-    # Display subsystem results
+    # Raw/debug mode
     # -----------------------------------------------------
 
-    if (
-        result["route"]
-        == ROUTE_LICENSING
-    ):
+    if args.raw:
 
-        display_licensing_results(
-            query=query,
-            results=result[
-                "results"
-            ],
-            filters=result[
-                "filters"
-            ],
+        if (
+            result[
+                "route"
+            ]
+            == ROUTE_LICENSING
+        ):
+
+            display_licensing_results(
+                query=query,
+                results=result[
+                    "results"
+                ],
+                filters=result[
+                    "filters"
+                ],
+            )
+
+        else:
+
+            display_hybrid_results(
+                query=query,
+                results=result[
+                    "results"
+                ],
+            )
+
+        return
+
+    # -----------------------------------------------------
+    # Evidence normalization
+    # -----------------------------------------------------
+
+    evidence = normalize_evidence(
+        search_result=result,
+        max_evidence=(
+            args.evidence_k
+        ),
+    )
+
+    # -----------------------------------------------------
+    # Grounded answer generation
+    # -----------------------------------------------------
+
+    rag_result = (
+        answer_from_evidence(
+            question=query,
+            evidence=evidence,
+            model=args.model,
         )
+    )
 
-    else:
-
-        display_hybrid_results(
-            query=query,
-            results=result[
-                "results"
-            ],
-        )
+    display_answer(
+        rag_result
+    )
 
 
 if __name__ == "__main__":

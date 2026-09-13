@@ -7,7 +7,9 @@ from app.embeddings import (
     load_embedding_cache,
     save_embedding_cache,
 )
-
+from app.context_expansion import (
+    expand_document_results,
+)
 from app.hybrid import (
     DEFAULT_CANDIDATE_K,
     hybrid_search,
@@ -582,7 +584,11 @@ def search_documents(
         top_k=top_k,
         candidate_k=candidate_k,
     )
-
+    results = expand_document_results(
+        query=query,
+        results=results,
+        corpus=chunks,
+    )
     return {
         "route": (
             ROUTE_DOCUMENTS
