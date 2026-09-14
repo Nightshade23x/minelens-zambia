@@ -88,6 +88,102 @@ def contains_text(
     )
 
 
+def evaluate_concepts(
+    answer: str,
+    concepts: list[dict],
+) -> dict:
+    """
+    Evaluate semantic concepts using acceptable phrase
+    alternatives.
+
+    Each concept passes if at least one phrase in its
+    any_of list appears in the answer.
+    """
+
+    details: dict[
+        str,
+        bool,
+    ] = {}
+
+    matches: dict[
+        str,
+        str | None,
+    ] = {}
+
+    for concept in concepts:
+
+        name = str(
+            concept.get(
+                "name",
+                "unnamed concept",
+            )
+        )
+
+        alternatives = (
+            concept.get(
+                "any_of",
+                [],
+            )
+        )
+
+        matched_phrase = None
+
+        for phrase in alternatives:
+
+            if contains_text(
+                answer,
+                str(
+                    phrase
+                ),
+            ):
+
+                matched_phrase = (
+                    str(
+                        phrase
+                    )
+                )
+
+                break
+
+        details[
+            name
+        ] = (
+            matched_phrase
+            is not None
+        )
+
+        matches[
+            name
+        ] = matched_phrase
+
+    total = len(
+        concepts
+    )
+
+    found = sum(
+        details.values()
+    )
+
+    if total:
+
+        recall = (
+            found
+            / total
+        )
+
+    else:
+
+        recall = 1.0
+
+    return {
+        "found": found,
+        "total": total,
+        "recall": recall,
+        "details": details,
+        "matches": matches,
+    }
+
+
 def source_text(
     sources: list[dict],
 ) -> str:
@@ -135,6 +231,9 @@ def evaluate_question(
     """
     Run one question through the complete MineLens
     pipeline and evaluate the final answer.
+
+    Generation failures become failed benchmark results
+    rather than terminating the entire evaluation run.
     """
 
     question = str(
@@ -142,6 +241,10 @@ def evaluate_question(
             "question"
         ]
     )
+
+    # -----------------------------------------------------
+    # Retrieval
+    # -----------------------------------------------------
 
     search_result = search_mine(
         query=question,
@@ -157,12 +260,37 @@ def evaluate_question(
         ),
     )
 
-    answer_result = (
-        answer_from_evidence(
-            question=question,
-            evidence=evidence,
+    # -----------------------------------------------------
+    # Answer generation
+    # -----------------------------------------------------
+
+    generation_error = None
+
+    try:
+
+        answer_result = (
+            answer_from_evidence(
+                question=question,
+                evidence=evidence,
+            )
         )
-    )
+
+    except Exception as error:
+
+        generation_error = (
+            f"{type(error).__name__}: "
+            f"{error}"
+        )
+
+        answer_result = {
+            "answer": "",
+            "model": None,
+            "generation_method": (
+                "error"
+            ),
+            "citations": [],
+            "sources": [],
+        }
 
     answer = str(
         answer_result.get(
@@ -225,6 +353,40 @@ def evaluate_question(
     else:
 
         fact_recall = 1.0
+
+    # -----------------------------------------------------
+    # Concept recall
+    # -----------------------------------------------------
+
+    expected_concepts = (
+        case.get(
+            "expected_concepts",
+            [],
+        )
+    )
+
+    concept_results = (
+        evaluate_concepts(
+            answer=answer,
+            concepts=(
+                expected_concepts
+            ),
+        )
+    )
+
+    minimum_concept_recall = float(
+        case.get(
+            "minimum_concept_recall",
+            1.0,
+        )
+    )
+
+    concept_recall_passed = (
+        concept_results[
+            "recall"
+        ]
+        >= minimum_concept_recall
+    )
 
     # -----------------------------------------------------
     # Forbidden facts
@@ -330,11 +492,13 @@ def evaluate_question(
     passed = all(
         (
             fact_recall == 1.0,
+            concept_recall_passed,
             no_forbidden_facts,
             route_correct,
             generation_correct,
             source_correct,
             citation_present,
+            generation_error is None,
         )
     )
 
@@ -346,6 +510,9 @@ def evaluate_question(
         ),
         "question": question,
         "passed": passed,
+        "error": (
+            generation_error
+        ),
         "route": {
             "expected": (
                 expected_route
@@ -382,6 +549,39 @@ def evaluate_question(
                 fact_results
             ),
         },
+        "concepts": {
+            "found": (
+                concept_results[
+                    "found"
+                ]
+            ),
+            "total": (
+                concept_results[
+                    "total"
+                ]
+            ),
+            "recall": (
+                concept_results[
+                    "recall"
+                ]
+            ),
+            "minimum_required": (
+                minimum_concept_recall
+            ),
+            "passed": (
+                concept_recall_passed
+            ),
+            "details": (
+                concept_results[
+                    "details"
+                ]
+            ),
+            "matches": (
+                concept_results[
+                    "matches"
+                ]
+            ),
+        },
         "forbidden": {
             "passed": (
                 no_forbidden_facts
@@ -408,6 +608,159 @@ def evaluate_question(
         },
         "answer": answer,
     }
+
+
+# ---------------------------------------------------------
+# Failure diagnostics
+# ---------------------------------------------------------
+
+def print_failure_details(
+    result: dict,
+) -> None:
+    """
+    Print useful diagnostics for one failed benchmark
+    question.
+    """
+
+    if result.get(
+        "error"
+    ):
+
+        print(
+            "  Generation error: "
+            f"{result['error']}"
+        )
+
+    if not result[
+        "route"
+    ][
+        "correct"
+    ]:
+
+        print(
+            "  Route mismatch: "
+            f"expected "
+            f"{result['route']['expected']}, "
+            f"got "
+            f"{result['route']['actual']}"
+        )
+
+    if not result[
+        "generation"
+    ][
+        "correct"
+    ]:
+
+        print(
+            "  Generation mismatch: "
+            f"expected "
+            f"{result['generation']['expected']}, "
+            f"got "
+            f"{result['generation']['actual']}"
+        )
+
+    missing_facts = [
+        fact
+        for fact, found
+        in result[
+            "facts"
+        ][
+            "details"
+        ].items()
+        if not found
+    ]
+
+    if missing_facts:
+
+        print(
+            "  Missing facts: "
+            + ", ".join(
+                missing_facts
+            )
+        )
+
+    missing_concepts = [
+        name
+        for name, found
+        in result[
+            "concepts"
+        ][
+            "details"
+        ].items()
+        if not found
+    ]
+
+    if missing_concepts:
+
+        print(
+            "  Missing concepts: "
+            + ", ".join(
+                missing_concepts
+            )
+        )
+
+    if not result[
+        "concepts"
+    ][
+        "passed"
+    ]:
+
+        print(
+            "  Concept recall: "
+            f"{result['concepts']['recall']:.3f} "
+            "(minimum "
+            f"{result['concepts']['minimum_required']:.3f})"
+        )
+
+    if result[
+        "forbidden"
+    ][
+        "found"
+    ]:
+
+        print(
+            "  Forbidden facts: "
+            + ", ".join(
+                result[
+                    "forbidden"
+                ][
+                    "found"
+                ]
+            )
+        )
+
+    if not result[
+        "source"
+    ][
+        "correct"
+    ]:
+
+        print(
+            "  Required source "
+            "was not cited."
+        )
+
+    if not result[
+        "citations"
+    ][
+        "present"
+    ]:
+
+        print(
+            "  No evidence citation."
+        )
+
+    answer = result.get(
+        "answer",
+        "",
+    )
+
+    if answer:
+
+        print(
+            "  Answer: "
+            f"{answer}"
+        )
 
 
 # ---------------------------------------------------------
@@ -473,6 +826,14 @@ def evaluate_all(
             f"Result: {status}"
         )
 
+        if not result[
+            "passed"
+        ]:
+
+            print_failure_details(
+                result
+            )
+
     return results
 
 
@@ -511,6 +872,18 @@ def print_summary(
         sum(
             result[
                 "facts"
+            ][
+                "recall"
+            ]
+            for result in results
+        )
+        / total
+    )
+
+    average_concept_recall = (
+        sum(
+            result[
+                "concepts"
             ][
                 "recall"
             ]
@@ -579,6 +952,17 @@ def print_summary(
         / total
     )
 
+    generation_success_rate = (
+        sum(
+            result.get(
+                "error"
+            )
+            is None
+            for result in results
+        )
+        / total
+    )
+
     print()
     print(
         "=" * 72
@@ -607,6 +991,11 @@ def print_summary(
     )
 
     print(
+        "Concept recall:        "
+        f"{average_concept_recall:.3f}"
+    )
+
+    print(
         "Route accuracy:        "
         f"{route_accuracy:.3f}"
     )
@@ -614,6 +1003,11 @@ def print_summary(
     print(
         "Generation accuracy:   "
         f"{generation_accuracy:.3f}"
+    )
+
+    print(
+        "Generation success:    "
+        f"{generation_success_rate:.3f}"
     )
 
     print(
@@ -693,6 +1087,20 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    if args.top_k <= 0:
+
+        raise ValueError(
+            "--top-k must be greater "
+            "than zero."
+        )
+
+    if args.evidence_k <= 0:
+
+        raise ValueError(
+            "--evidence-k must be greater "
+            "than zero."
+        )
 
     questions = load_questions(
         args.questions

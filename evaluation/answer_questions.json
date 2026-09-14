@@ -80,5 +80,160 @@
     ],
     "required_source_contains": "6561",
     "requires_ollama": false
+  },
+  {
+    "id": "critical_minerals_goal",
+    "question": "what is the goal of Zambia's National Critical Minerals Strategy",
+    "expected_route": "documents",
+    "expected_generation_method": "ollama",
+    "expected_facts": [],
+    "expected_concepts": [
+      {
+        "name": "harness critical minerals",
+        "any_of": [
+          "harness and utilize the critical minerals",
+          "harness critical minerals",
+          "utilize critical minerals",
+          "use critical minerals"
+        ]
+      },
+      {
+        "name": "socio-economic development",
+        "any_of": [
+          "socio-economic development",
+          "socioeconomic development"
+        ]
+      },
+      {
+        "name": "middle-income country by 2030",
+        "any_of": [
+          "middle-income country by 2030",
+          "middle income country by 2030",
+          "industrialised middle-income country by 2030",
+          "industrialized middle-income country by 2030"
+        ]
+      }
+    ],
+    "minimum_concept_recall": 0.66,
+    "forbidden_facts": [],
+    "required_source_contains": "National-Critical-Minerals-Strategy",
+    "requires_ollama": true
+  },
+  {
+    "id": "critical_minerals_importance",
+    "question": "why are critical minerals important to Zambia",
+    "expected_route": "documents",
+    "expected_generation_method": "ollama",
+    "expected_facts": [],
+    "expected_concepts": [
+      {
+        "name": "economic transformation",
+        "any_of": [
+          "economic transformation",
+          "transform the economy",
+          "economic development"
+        ]
+      },
+      {
+        "name": "job creation",
+        "any_of": [
+          "job creation",
+          "create jobs",
+          "employment"
+        ]
+      },
+      {
+        "name": "value addition",
+        "any_of": [
+          "value addition",
+          "value-added",
+          "processing"
+        ]
+      }
+    ],
+    "minimum_concept_recall": 0.66,
+    "forbidden_facts": [],
+    "required_source_contains": "National-Critical-Minerals-Strategy",
+    "requires_ollama": true
+  },
+  {
+    "id": "critical_minerals_geoscience_challenge",
+    "question": "what geoscientific challenge does Zambia face in developing critical minerals",
+    "expected_route": "documents",
+    "expected_generation_method": "ollama",
+    "expected_facts": [],
+    "expected_concepts": [
+      {
+        "name": "inadequate geoscientific data",
+        "any_of": [
+          "inadequate geoscientific data",
+          "lack of geoscientific data",
+          "insufficient geoscientific data"
+        ]
+      }
+    ],
+    "minimum_concept_recall": 1.0,
+    "forbidden_facts": [],
+    "required_source_contains": "National-Critical-Minerals-Strategy",
+    "requires_ollama": true
+  },
+  {
+    "id": "critical_minerals_skills",
+    "question": "what skills and expertise does Zambia need for its critical minerals industry",
+    "expected_route": "documents",
+    "expected_generation_method": "ollama",
+    "expected_facts": [],
+    "expected_concepts": [
+      {
+        "name": "identify potential deposits",
+        "any_of": [
+          "identify and restrict areas of potential deposits",
+          "identify areas of potential deposits",
+          "identify potential deposits"
+        ]
+      },
+      {
+        "name": "technical challenges",
+        "any_of": [
+          "technical challenges",
+          "technical exploration",
+          "exploration, production, processing and refining",
+          "exploration, production, processing and reﬁning",
+          "production, processing and refining",
+          "production, processing and reﬁning"
+        ]
+      },
+      {
+        "name": "sustainability",
+        "any_of": [
+          "manage the sustainability",
+          "sustainability of the critical minerals industry",
+          "sustainable critical minerals industry",
+          "sustainability management"
+        ]
+      }
+    ],
+    "minimum_concept_recall": 0.66,
+    "forbidden_facts": [],
+    "required_source_contains": "National-Critical-Minerals-Strategy",
+    "requires_ollama": true
+  },
+  {
+    "id": "critical_strategy_timeframe",
+    "question": "what period does Zambia's National Critical Minerals Strategy cover",
+    "expected_route": "documents",
+    "expected_generation_method": "ollama",
+    "expected_facts": [
+      "2024",
+      "2028"
+    ],
+    "expected_concepts": [],
+    "minimum_concept_recall": 1.0,
+    "forbidden_facts": [
+      "2025-2029",
+      "2023-2027"
+    ],
+    "required_source_contains": "National-Critical-Minerals-Strategy",
+    "requires_ollama": true
   }
 ]
