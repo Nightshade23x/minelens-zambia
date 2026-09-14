@@ -36,9 +36,11 @@ OLLAMA_URL_ENV = (
 
 
 PREFERRED_MODELS = (
+    "qwen3:4b-instruct-2507-q4_K_M",
+    "qwen3:4b",
+    "llama3.2:3b",
     "qwen2.5:7b",
     "llama3.1:8b",
-    "llama3.2:3b",
     "mistral:7b",
 )
 
@@ -74,6 +76,13 @@ Rules:
     multiple items, include all clearly relevant items that
     are explicitly present in the supplied evidence. Do not
     stop after the first item.
+13. When the evidence explicitly lists actions, capabilities,
+    skills, expertise, requirements, objectives, challenges,
+    or responsibilities relevant to the question, treat those
+    listed items as the answer. Do not claim the information is
+    unspecified merely because the source describes the items
+    as actions or capabilities rather than using exactly the
+    same wording as the question.
 """.strip()
 
 
