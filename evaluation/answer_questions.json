@@ -1,0 +1,84 @@
+[
+  {
+    "id": "fee_large_scale_mining",
+    "question": "how much does a large scale mining licence application cost",
+    "expected_route": "documents",
+    "expected_generation_method": "deterministic-fee",
+    "expected_facts": [
+      "K64,000"
+    ],
+    "forbidden_facts": [
+      "K160,000",
+      "Kiswahili"
+    ],
+    "required_source_contains": "PRESCRIBED-APPLICATION-FEES",
+    "requires_ollama": false
+  },
+  {
+    "id": "fee_large_scale_exploration",
+    "question": "how much does a large scale exploration licence application cost",
+    "expected_route": "documents",
+    "expected_generation_method": "deterministic-fee",
+    "expected_facts": [
+      "K4,000"
+    ],
+    "forbidden_facts": [
+      "K10,000"
+    ],
+    "required_source_contains": "PRESCRIBED-APPLICATION-FEES",
+    "requires_ollama": false
+  },
+  {
+    "id": "fee_small_scale_mining",
+    "question": "what is the application fee for a small scale mining licence",
+    "expected_route": "documents",
+    "expected_generation_method": "deterministic-fee",
+    "expected_facts": [
+      "K6,000"
+    ],
+    "forbidden_facts": [
+      "K15,000"
+    ],
+    "required_source_contains": "PRESCRIBED-APPLICATION-FEES",
+    "requires_ollama": false
+  },
+  {
+    "id": "critical_minerals",
+    "question": "what are Zambia's critical minerals",
+    "expected_route": "documents",
+    "expected_generation_method": "deterministic-critical-minerals",
+    "expected_facts": [
+      "Lithium",
+      "Tin",
+      "Graphite",
+      "Coltan",
+      "Rare Earth Elements",
+      "Manganese",
+      "Nickel"
+    ],
+    "forbidden_facts": [],
+    "required_source_contains": "National-Critical-Minerals-Strategy",
+    "requires_ollama": false
+  },
+  {
+    "id": "licence_42553",
+    "question": "42553-HQ-LML",
+    "expected_route": "licensing",
+    "expected_generation_method": "deterministic-licensing",
+    "expected_facts": [
+      "42553-HQ-LML",
+      "Nisco Industries Ltd",
+      "Approved",
+      "Solwezi",
+      "North Western",
+      "9,541.1303 ha",
+      "25th September 2026"
+    ],
+    "forbidden_facts": [
+      "Rejected",
+      "Deferred"
+    ],
+    "required_source_contains": "6561",
+    "requires_ollama": false
+  }
+]
