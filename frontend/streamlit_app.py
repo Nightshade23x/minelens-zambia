@@ -28,6 +28,9 @@ from frontend.components.sidebar import (
 from frontend.components.retrieval import (
     display_retrieval_details,
 )
+from frontend.components.documents import (
+    display_document_evidence,
+)
 # =========================================================
 # PROJECT PATH
 # =========================================================
@@ -911,7 +914,17 @@ if result_state:
             "Language model not required "
             "for this answer."
         )
+# =====================================================
+# DOCUMENT EVIDENCE
+# =====================================================
 
+    if (
+        route_info.get("route")
+        == ROUTE_DOCUMENTS
+    ):
+        display_document_evidence(
+            evidence
+        )
     # =====================================================
     # LICENSING RECORDS
     # =====================================================
