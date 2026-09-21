@@ -942,20 +942,26 @@ visible_records = filtered_records[
 # RESULTS TABLE
 # =========================================================
 
+# =========================================================
+# RESULTS TABLE
+# =========================================================
+
 rows = table_rows(
     visible_records
 )
-
 
 dataframe = pd.DataFrame(
     rows
 )
 
 
-st.dataframe(
+table_event = st.dataframe(
     dataframe,
     use_container_width=True,
     hide_index=True,
+    key="licence_results_table",
+    on_select="rerun",
+    selection_mode="single-row",
     column_config={
         "Licence code":
             st.column_config.TextColumn(
@@ -1022,59 +1028,43 @@ st.subheader(
 )
 
 
-record_labels: list[str] = []
-
-record_lookup: dict[
-    str,
-    dict,
-] = {}
+selected_rows = (
+    table_event.selection.rows
+)
 
 
-for index, record in enumerate(
-    visible_records
-):
+if not selected_rows:
 
-    code = text_value(
-        record,
-        "licence_code",
-    ) or "Unknown licence"
-
-    applicant = text_value(
-        record,
-        "applicant",
+    st.info(
+        "Select a row in the results table "
+        "to view the complete licence record."
     )
 
-    label = code
+else:
 
-    if applicant:
-        label += (
-            f" — {applicant}"
+    selected_index = (
+        selected_rows[0]
+    )
+
+    if (
+        0
+        <= selected_index
+        < len(visible_records)
+    ):
+
+        selected_record = (
+            visible_records[
+                selected_index
+            ]
         )
 
-    unique_label = (
-        f"{label} [{index + 1}]"
-    )
+        display_record_card(
+            selected_record
+        )
 
-    record_labels.append(
-        unique_label
-    )
+    else:
 
-    record_lookup[
-        unique_label
-    ] = record
-
-
-selected_record_label = st.selectbox(
-    "Select a licence",
-    options=record_labels,
-)
-
-
-selected_record = record_lookup[
-    selected_record_label
-]
-
-
-display_record_card(
-    selected_record
-)
+        st.warning(
+            "The selected row is no longer "
+            "available. Select another record."
+        )
