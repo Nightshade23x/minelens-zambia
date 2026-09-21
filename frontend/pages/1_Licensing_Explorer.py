@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-
+from frontend.components.licensing_analytics import (
+    display_licensing_analytics,
+)
 
 # =========================================================
 # PROJECT PATH
@@ -875,7 +877,15 @@ with metric_4:
         f"{len(matching_licence_types):,}",
     )
 
+# =========================================================
+# LICENSING ANALYTICS
+# =========================================================
 
+st.divider()
+
+display_licensing_analytics(
+    filtered_records
+)
 # =========================================================
 # RESULTS HEADER
 # =========================================================
