@@ -8,7 +8,12 @@ import streamlit as st
 from frontend.components.licensing_analytics import (
     display_licensing_analytics,
 )
-
+from frontend.components.licensing_map import (
+    display_licensing_map,
+)
+from frontend.utils.licensing_geo import (
+    normalized_districts,
+)
 # =========================================================
 # PROJECT PATH
 # =========================================================
@@ -286,9 +291,8 @@ def record_matches_filters(
     )
 
     record_districts = set(
-        list_value(
-            record,
-            "districts",
+        normalized_districts(
+            record
         )
     )
 
@@ -679,9 +683,13 @@ province_options = unique_text_values(
     "province",
 )
 
-district_options = unique_list_values(
-    records,
-    "districts",
+district_options = sorted(
+    {
+        district
+        for record in records
+        for district in normalized_districts(record)
+    },
+    key=str.casefold,
 )
 
 commodity_options = unique_list_values(
@@ -885,6 +893,16 @@ st.divider()
 
 display_licensing_analytics(
     filtered_records
+)
+# =========================================================
+# LICENSING MAP
+# =========================================================
+
+st.divider()
+
+display_licensing_map(
+    filtered_records,
+    selected_districts=selected_districts,
 )
 # =========================================================
 # RESULTS HEADER
