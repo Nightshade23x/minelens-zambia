@@ -14,6 +14,9 @@ from frontend.components.licensing_map import (
 from frontend.utils.licensing_geo import (
     normalized_districts,
 )
+from frontend.components.licensing_summary import (
+    display_province_summary,
+)
 # =========================================================
 # PROJECT PATH
 # =========================================================
@@ -982,6 +985,15 @@ st.divider()
 display_licensing_map(
     filtered_records,
     selected_districts=selected_districts,
+)
+# =========================================================
+# PROVINCE SUMMARY
+# =========================================================
+
+st.divider()
+
+display_province_summary(
+    filtered_records
 )
 # =========================================================
 # RESULTS HEADER
