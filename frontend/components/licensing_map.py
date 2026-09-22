@@ -648,7 +648,74 @@ def display_licensing_map(
         deck,
         use_container_width=True,
     )
+    # -----------------------------------------------------
+    # MAP LEGEND
+    # -----------------------------------------------------
 
+    st.html(
+        """
+        <div style="
+            display:flex;
+            flex-wrap:wrap;
+            gap:28px;
+            align-items:center;
+            margin-top:12px;
+            margin-bottom:14px;
+            font-size:14px;
+        ">
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+            ">
+                <span style="
+                    width:16px;
+                    height:16px;
+                    border-radius:50%;
+                    background:#ff5757;
+                    border:2px solid white;
+                    display:inline-block;
+                    flex-shrink:0;
+                "></span>
+                <span>
+                    Licensing activity — larger = more records
+                </span>
+            </div>
+
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+            ">
+                <span style="
+                    width:28px;
+                    border-top:3px solid white;
+                    display:inline-block;
+                    flex-shrink:0;
+                "></span>
+                <span>
+                    Zambia national border
+                </span>
+            </div>
+
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+            ">
+                <span style="
+                    width:28px;
+                    border-top:2px solid rgb(105,160,210);
+                    display:inline-block;
+                    flex-shrink:0;
+                "></span>
+                <span>
+                    Provincial boundary
+                </span>
+            </div>
+        </div>
+        """
+    )
     # -----------------------------------------------------
     # NOTES
     # -----------------------------------------------------
