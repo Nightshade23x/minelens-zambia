@@ -17,6 +17,9 @@ from frontend.utils.licensing_geo import (
 from frontend.components.licensing_summary import (
     display_province_summary,
 )
+from frontend.components.licensing_compare import (
+    display_licence_comparison,
+)
 # =========================================================
 # PROJECT PATH
 # =========================================================
@@ -1144,7 +1147,15 @@ if (
         f"the remaining matches."
     )
 
+# =========================================================
+# LICENCE COMPARISON
+# =========================================================
 
+st.divider()
+
+display_licence_comparison(
+    filtered_records
+)
 # =========================================================
 # LICENCE DETAILS
 # =========================================================
