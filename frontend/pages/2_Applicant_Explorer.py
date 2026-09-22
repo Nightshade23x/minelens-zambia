@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-
+from frontend.components.applicant_rankings import (
+    display_applicant_rankings,
+)
 
 # =========================================================
 # PROJECT PATH
@@ -909,4 +911,13 @@ st.download_button(
         f"minelens_{safe_filename}_licences.csv"
     ),
     mime="text/csv",
+)
+# =========================================================
+# APPLICANT RANKINGS
+# =========================================================
+
+st.divider()
+
+display_applicant_rankings(
+    records
 )
