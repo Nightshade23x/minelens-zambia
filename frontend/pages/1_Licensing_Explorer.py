@@ -536,6 +536,75 @@ def display_record_card(
 # =========================================================
 # TABLE HELPERS
 # =========================================================
+def export_rows(
+    records: list[dict],
+) -> list[dict]:
+    """
+    Convert the full filtered licensing records into
+    export-friendly rows.
+    """
+
+    rows: list[dict] = []
+
+    for record in records:
+
+        rows.append(
+            {
+                "Licence Code": text_value(
+                    record,
+                    "licence_code",
+                ),
+                "Applicant": text_value(
+                    record,
+                    "applicant",
+                ),
+                "Licence Type": text_value(
+                    record,
+                    "licence_type",
+                ),
+                "Licence Type Code": text_value(
+                    record,
+                    "licence_type_code",
+                ),
+                "Decision": text_value(
+                    record,
+                    "decision",
+                ),
+                "Province": text_value(
+                    record,
+                    "province",
+                ),
+                "Districts": joined_value(
+                    record,
+                    "districts",
+                ),
+                "Commodities": joined_value(
+                    record,
+                    "commodities",
+                ),
+                "Area (ha)": record.get(
+                    "area_hectares"
+                ),
+                "Area": text_value(
+                    record,
+                    "area_text",
+                ),
+                "Stipulated Timeframe": text_value(
+                    record,
+                    "deadline",
+                ),
+                "Deadline ISO": text_value(
+                    record,
+                    "deadline_iso",
+                ),
+                "Source": text_value(
+                    record,
+                    "source_url",
+                ),
+            }
+        )
+
+    return rows
 
 def table_rows(
     records: list[dict],
@@ -802,7 +871,17 @@ filtered_records = [
         commodities=selected_commodities,
     )
 ]
+export_dataframe = pd.DataFrame(
+    export_rows(
+        filtered_records
+    )
+)
 
+export_csv = export_dataframe.to_csv(
+    index=False
+).encode(
+    "utf-8"
+)
 
 # =========================================================
 # DASHBOARD METRICS
@@ -908,10 +987,8 @@ display_licensing_map(
 # RESULTS HEADER
 # =========================================================
 
-results_column, limit_column = (
-    st.columns(
-        [3, 1]
-    )
+results_column, export_column, limit_column = st.columns(
+    [3, 1.2, 1]
 )
 
 
@@ -927,7 +1004,16 @@ with results_column:
         f"match the current filters."
     )
 
+with export_column:
 
+    st.download_button(
+        "Download CSV",
+        data=export_csv,
+        file_name="minelens_licensing_results.csv",
+        mime="text/csv",
+        use_container_width=True,
+        disabled=not filtered_records,
+    )
 with limit_column:
 
     result_limit = st.selectbox(
