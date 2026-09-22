@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 
@@ -24,6 +25,20 @@ ADMIN_DATA_PATH = (
     / "zambia_admin_divisions.csv"
 )
 
+PROVINCE_GEOJSON_PATH = (
+    ROOT_DIR
+    / "frontend"
+    / "data"
+    / "zambia_provinces.geojson"
+)
+
+COUNTRY_GEOJSON_PATH = (
+    ROOT_DIR
+    / "frontend"
+    / "data"
+    / "zambia_country.geojson"
+)
+
 
 # =========================================================
 # ADMINISTRATIVE GEOGRAPHY
@@ -34,8 +49,7 @@ ADMIN_DATA_PATH = (
 )
 def load_district_centroids() -> pd.DataFrame:
     """
-    Load Zambia district centroid coordinates from
-    the local Open Admin Data dataset.
+    Load Zambia district centroid coordinates.
     """
 
     dataframe = pd.read_csv(
@@ -97,8 +111,27 @@ def load_district_centroids() -> pd.DataFrame:
     return districts
 
 
+@st.cache_data(
+    show_spinner=False,
+)
+def load_geojson(
+    path: Path,
+) -> dict:
+    """
+    Load a local GeoJSON file.
+    """
+
+    with path.open(
+        "r",
+        encoding="utf-8",
+    ) as file:
+        return json.load(
+            file
+        )
+
+
 # =========================================================
-# MARKER STYLING
+# MARKER STYLE
 # =========================================================
 
 def marker_color(
@@ -106,33 +139,23 @@ def marker_color(
     maximum: int,
 ) -> list[int]:
     """
-    Return a coral/red RGBA marker colour.
-
-    Larger record counts receive a slightly stronger
-    shade while retaining the MineLens red accent.
+    MineLens coral/red marker palette.
     """
 
     if maximum <= 0:
         intensity = 0.0
-
     else:
         intensity = records / maximum
 
-    # Lower-count districts use a lighter coral.
-    # Higher-count districts approach the MineLens red.
-    red = 255
-    green = int(
-        125 - (45 * intensity)
-    )
-    blue = int(
-        125 - (45 * intensity)
-    )
-
     return [
-        red,
-        green,
-        blue,
-        210,
+        255,
+        int(
+            125 - 45 * intensity
+        ),
+        int(
+            125 - 45 * intensity
+        ),
+        220,
     ]
 
 
@@ -145,25 +168,20 @@ def build_district_map_data(
 ) -> tuple[pd.DataFrame, int, int]:
     """
     Aggregate licensing records by district.
-
-    Returns:
-        map_dataframe
-        mapped_record_count
-        unmapped_record_count
-
-    A licence associated with multiple districts contributes
-    to each associated district marker.
-
-    Coverage is counted once per licensing record.
     """
 
-    centroid_data = load_district_centroids()
+    centroid_data = (
+        load_district_centroids()
+    )
 
     known_districts = set(
         centroid_data["district"]
     )
 
-    district_counts: dict[str, int] = {}
+    district_counts: dict[
+        str,
+        int,
+    ] = {}
 
     mapped_records = 0
     unmapped_records = 0
@@ -182,17 +200,16 @@ def build_district_map_data(
 
         if matched_districts:
             mapped_records += 1
-
         else:
             unmapped_records += 1
 
-        # Avoid counting duplicate district names
-        # twice within one record.
         for district in set(
             matched_districts
         ):
 
-            district_counts[district] = (
+            district_counts[
+                district
+            ] = (
                 district_counts.get(
                     district,
                     0,
@@ -210,8 +227,12 @@ def build_district_map_data(
 
     centroid_lookup = (
         centroid_data
-        .set_index("district")
-        .to_dict("index")
+        .set_index(
+            "district"
+        )
+        .to_dict(
+            "index"
+        )
     )
 
     maximum_count = max(
@@ -220,20 +241,20 @@ def build_district_map_data(
 
     rows: list[dict] = []
 
-    for district, count in district_counts.items():
+    for district, count in (
+        district_counts.items()
+    ):
 
         geo = centroid_lookup[
             district
         ]
 
-        # Square-root sizing prevents high-count districts
-        # from becoming disproportionately large.
         radius = (
             8000
-            + (
-                math.sqrt(count)
-                * 3500
+            + math.sqrt(
+                count
             )
+            * 3500
         )
 
         rows.append(
@@ -257,12 +278,10 @@ def build_district_map_data(
             }
         )
 
-    map_dataframe = pd.DataFrame(
-        rows
-    )
-
     map_dataframe = (
-        map_dataframe
+        pd.DataFrame(
+            rows
+        )
         .sort_values(
             "records",
             ascending=False,
@@ -280,6 +299,80 @@ def build_district_map_data(
 
 
 # =========================================================
+# VIEW STATE
+# =========================================================
+
+def map_view_state(
+    map_data: pd.DataFrame,
+) -> pdk.ViewState:
+    """
+    Automatically choose a useful map centre and zoom
+    from the currently visible districts.
+    """
+
+    if map_data.empty:
+
+        return pdk.ViewState(
+            latitude=-13.4,
+            longitude=27.8,
+            zoom=5.0,
+            pitch=0,
+        )
+
+    latitude = float(
+        map_data["lat"].mean()
+    )
+
+    longitude = float(
+        map_data["lon"].mean()
+    )
+
+    if len(map_data) == 1:
+
+        zoom = 7.0
+
+    else:
+
+        lat_range = (
+            map_data["lat"].max()
+            - map_data["lat"].min()
+        )
+
+        lon_range = (
+            map_data["lon"].max()
+            - map_data["lon"].min()
+        )
+
+        spread = max(
+            lat_range,
+            lon_range,
+        )
+
+        if spread < 0.75:
+            zoom = 7.0
+
+        elif spread < 1.5:
+            zoom = 6.4
+
+        elif spread < 3:
+            zoom = 5.8
+
+        elif spread < 5:
+            zoom = 5.3
+
+        else:
+            zoom = 5.0
+
+    return pdk.ViewState(
+        latitude=latitude,
+        longitude=longitude,
+        zoom=zoom,
+        pitch=0,
+        bearing=0,
+    )
+
+
+# =========================================================
 # MAP DISPLAY
 # =========================================================
 
@@ -290,8 +383,11 @@ def display_licensing_map(
     """
     Display district-level licensing activity.
 
-    Markers represent administrative district centroids,
-    not precise licence coordinates.
+    Province and country boundary polygons are shown
+    for spatial context.
+
+    Licence circles represent district centroids,
+    not precise mining-right locations.
     """
 
     st.subheader(
@@ -300,8 +396,8 @@ def display_licensing_map(
 
     st.caption(
         "Markers represent district centroids and show "
-        "the number of licensing records associated with "
-        "each district. They are not precise licence locations."
+        "the number of matching licensing records. "
+        "They are not precise licence locations."
     )
 
     if not records:
@@ -319,6 +415,20 @@ def display_licensing_map(
     ) = build_district_map_data(
         records
     )
+
+    if map_data.empty:
+
+        st.info(
+            "None of the current records could be "
+            "matched to district coordinates."
+        )
+
+        return
+
+    # -----------------------------------------------------
+    # RESPECT ACTIVE DISTRICT FILTER
+    # -----------------------------------------------------
+
     if selected_districts:
 
         selected_set = set(
@@ -326,10 +436,13 @@ def display_licensing_map(
         )
 
         map_data = map_data[
-            map_data["district"].isin(
+            map_data[
+                "district"
+            ].isin(
                 selected_set
             )
         ].copy()
+
     if map_data.empty:
 
         st.info(
@@ -338,21 +451,15 @@ def display_licensing_map(
         )
 
         return
-    if map_data.empty:
 
-        st.info(
-            "None of the current licensing records "
-            "could be matched to district coordinates."
+    # -----------------------------------------------------
+    # METRICS
+    # -----------------------------------------------------
+
+    metric_1, metric_2 = (
+        st.columns(
+            2
         )
-
-        return
-
-    # -----------------------------------------------------
-    # MAP METRICS
-    # -----------------------------------------------------
-
-    metric_1, metric_2 = st.columns(
-        2
     )
 
     with metric_1:
@@ -360,11 +467,6 @@ def display_licensing_map(
         st.metric(
             "Mapped records",
             f"{mapped_records:,}",
-            help=(
-                "Licensing records with at least one "
-                "district matched to the administrative "
-                "geography dataset."
-            ),
         )
 
     with metric_2:
@@ -382,12 +484,83 @@ def display_licensing_map(
         )
 
     # -----------------------------------------------------
-    # PYDECK LAYER
+    # LOAD BOUNDARIES
+    # -----------------------------------------------------
+
+    province_geojson = (
+        load_geojson(
+            PROVINCE_GEOJSON_PATH
+        )
+    )
+
+    country_geojson = (
+        load_geojson(
+            COUNTRY_GEOJSON_PATH
+        )
+    )
+
+    # -----------------------------------------------------
+    # PROVINCE BOUNDARIES
+    # -----------------------------------------------------
+
+    province_layer = pdk.Layer(
+        "GeoJsonLayer",
+        data=province_geojson,
+
+        filled=True,
+        stroked=True,
+
+        # Very subtle province fill
+        get_fill_color=[
+            60,
+            75,
+            95,
+            22,
+        ],
+
+        # Blue-grey internal boundaries
+        get_line_color=[
+            105,
+            160,
+            210,
+            210,
+        ],
+
+        line_width_min_pixels=1.5,
+
+        pickable=False,
+    )
+
+    # -----------------------------------------------------
+    # NATIONAL BORDER
+    # -----------------------------------------------------
+
+    country_layer = pdk.Layer(
+        "GeoJsonLayer",
+        data=country_geojson,
+
+        filled=False,
+        stroked=True,
+
+        # Strong white Zambia outline
+        get_line_color=[
+            245,
+            245,
+            245,
+            245,
+        ],
+
+        line_width_min_pixels=3,
+
+        pickable=False,
+    )
+
+    # -----------------------------------------------------
+    # LICENSING MARKERS
     # -----------------------------------------------------
 
     district_layer = pdk.Layer(
         "ScatterplotLayer",
-
         data=map_data,
 
         get_position=[
@@ -397,13 +570,15 @@ def display_licensing_map(
 
         get_radius="radius",
 
-        get_fill_color="fill_color",
+        get_fill_color=(
+            "fill_color"
+        ),
 
         get_line_color=[
             255,
             255,
             255,
-            230,
+            240,
         ],
 
         stroked=True,
@@ -421,20 +596,8 @@ def display_licensing_map(
             255,
             215,
             0,
-            220,
+            230,
         ],
-    )
-
-    # -----------------------------------------------------
-    # MAP VIEW
-    # -----------------------------------------------------
-
-    view_state = pdk.ViewState(
-        latitude=-13.4,
-        longitude=27.8,
-        zoom=5.1,
-        pitch=0,
-        bearing=0,
     )
 
     # -----------------------------------------------------
@@ -443,8 +606,10 @@ def display_licensing_map(
 
     tooltip = {
         "html": (
-            "<div style='font-size: 14px;'>"
-            "<b style='font-size: 16px;'>{district}</b>"
+            "<div style='font-size:14px;'>"
+            "<b style='font-size:16px;'>"
+            "{district}"
+            "</b>"
             "<br/>"
             "{province} Province"
             "<br/><br/>"
@@ -454,7 +619,9 @@ def display_licensing_map(
         "style": {
             "backgroundColor": "#17191f",
             "color": "white",
-            "border": "1px solid #ff5252",
+            "border": (
+                "1px solid #ff5252"
+            ),
         },
     }
 
@@ -464,9 +631,15 @@ def display_licensing_map(
 
     deck = pdk.Deck(
         layers=[
-            district_layer
+            province_layer,
+            country_layer,
+            district_layer,
         ],
-        initial_view_state=view_state,
+        initial_view_state=(
+            map_view_state(
+                map_data
+            )
+        ),
         tooltip=tooltip,
         map_style=None,
     )
@@ -477,18 +650,24 @@ def display_licensing_map(
     )
 
     # -----------------------------------------------------
-    # EXPLANATION
+    # NOTES
     # -----------------------------------------------------
 
     st.caption(
-        "Circle size represents the number of matching "
-        "licensing records associated with each district. "
-        "District centroid coordinates are from Open Admin "
-        "Data Zambia (CC BY 4.0)."
+        "Coral circles show district-level licensing "
+        "activity. Blue-grey lines show provincial "
+        "boundaries and the bright outer line shows "
+        "Zambia's national border. Licence locations "
+        "remain aggregated to district centroids."
+    )
+
+    st.caption(
+        "District centroid coordinates: Open Admin Data "
+        "Zambia. Boundary geometry: geoBoundaries."
     )
 
     # -----------------------------------------------------
-    # MAP DATA
+    # MAP DATA TABLE
     # -----------------------------------------------------
 
     with st.expander(
@@ -506,9 +685,14 @@ def display_licensing_map(
             ]
             .rename(
                 columns={
-                    "district": "District",
-                    "province": "Province",
-                    "records": "Records",
+                    "district":
+                        "District",
+
+                    "province":
+                        "Province",
+
+                    "records":
+                        "Records",
                 }
             )
         )
