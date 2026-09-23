@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-
+from frontend.components.intelligence_brief import (  # noqa: E402
+    display_commodity_intelligence_brief,
+)
 
 # =========================================================
 # PROJECT PATH
@@ -669,7 +671,16 @@ with related_tab:
         hide_index=True,
     )
 
+# =========================================================
+# INTEGRATED INTELLIGENCE BRIEF
+# =========================================================
 
+st.divider()
+
+display_commodity_intelligence_brief(
+    commodity=selected_commodity,
+    records=matching_records,
+)
 # =========================================================
 # LICENCE RECORDS
 # =========================================================
