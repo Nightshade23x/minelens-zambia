@@ -1160,28 +1160,16 @@ display_licence_comparison(
 # LICENCE DETAILS
 # =========================================================
 
-st.subheader(
-    "Licence details"
-)
-
-
 selected_rows = (
     table_event.selection.rows
 )
 
+selected_record = None
 
-if not selected_rows:
 
-    st.info(
-        "Select a row in the results table "
-        "to view the complete licence record."
-    )
+if selected_rows:
 
-else:
-
-    selected_index = (
-        selected_rows[0]
-    )
+    selected_index = selected_rows[0]
 
     if (
         0
@@ -1205,3 +1193,148 @@ else:
             "The selected row is no longer "
             "available. Select another record."
         )
+
+else:
+
+    st.info(
+        "Select a row in the results table "
+        "to view the complete licence record."
+    )
+
+
+# =========================================================
+# RECORD CONTEXT NAVIGATION
+# =========================================================
+
+if selected_record is not None:
+
+    st.markdown(
+        "#### Explore this record"
+    )
+
+    licence_code = clean_text(
+        selected_record.get(
+            "licence_code"
+        )
+    )
+
+    applicant = clean_text(
+        selected_record.get(
+            "applicant"
+        )
+    )
+
+    raw_commodities = selected_record.get(
+        "commodities",
+        [],
+    )
+
+
+    if isinstance(
+        raw_commodities,
+        list,
+    ):
+
+        record_commodities = [
+            clean_text(
+                commodity
+            )
+            for commodity
+            in raw_commodities
+            if clean_text(
+                commodity
+            )
+        ]
+
+    else:
+
+        commodity_text = clean_text(
+            raw_commodities
+        )
+
+        record_commodities = [
+            item.strip()
+            for item
+            in commodity_text.split(",")
+            if item.strip()
+        ]
+
+
+    record_commodities = sorted(
+        set(
+            record_commodities
+        ),
+        key=str.casefold,
+    )
+
+
+    nav_col_1, nav_col_2 = st.columns(
+        2
+    )
+
+
+    # -----------------------------------------------------
+    # APPLICANT NAVIGATION
+    # -----------------------------------------------------
+
+    with nav_col_1:
+
+        if applicant:
+
+            if st.button(
+                "Open applicant profile",
+                use_container_width=True,
+                key=(
+                    f"licence_to_applicant_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "applicant_search"
+                ] = applicant
+
+                st.switch_page(
+                    "pages/2_Applicant_Explorer.py"
+                )
+
+
+    # -----------------------------------------------------
+    # COMMODITY NAVIGATION
+    # -----------------------------------------------------
+
+    with nav_col_2:
+
+        if record_commodities:
+
+            selected_nav_commodity = (
+                st.selectbox(
+                    "Explore commodity",
+                    options=record_commodities,
+                    key=(
+                        f"licence_commodity_nav_"
+                        f"{licence_code}"
+                    ),
+                )
+            )
+
+            if st.button(
+                "Open Commodity Explorer",
+                use_container_width=True,
+                key=(
+                    f"licence_to_commodity_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "commodity_selector"
+                ] = selected_nav_commodity
+
+                st.session_state[
+                    "commodity_licence_search"
+                ] = licence_code
+
+                st.switch_page(
+                    "pages/4_Commodity_Explorer.py"
+                )

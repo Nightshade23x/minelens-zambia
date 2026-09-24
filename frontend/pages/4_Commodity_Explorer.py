@@ -9,7 +9,9 @@ import streamlit as st
 from frontend.components.intelligence_brief import (  # noqa: E402
     display_commodity_intelligence_brief,
 )
-
+from frontend.components.licensing import (  # noqa: E402
+    display_licensing_record,
+)
 # =========================================================
 # PROJECT PATH
 # =========================================================
@@ -419,14 +421,32 @@ st.subheader(
 )
 
 
+# =========================================================
+# COMMODITY SELECTION STATE
+# =========================================================
+
+if (
+    "commodity_selector"
+    not in st.session_state
+    or st.session_state[
+        "commodity_selector"
+    ]
+    not in commodities
+):
+
+    st.session_state[
+        "commodity_selector"
+    ] = (
+        "Cu"
+        if "Cu" in commodities
+        else commodities[0]
+    )
+
+
 selected_commodity = st.selectbox(
     "Commodity",
     options=commodities,
-    index=(
-        commodities.index("Cu")
-        if "Cu" in commodities
-        else 0
-    ),
+    key="commodity_selector",
 )
 
 
@@ -435,7 +455,52 @@ matching_records = commodity_records(
     selected_commodity,
 )
 
+# =========================================================
+# LICENCE / APPLICANT SEARCH
+# =========================================================
 
+licence_search = st.text_input(
+    "Find licence or applicant within this commodity",
+    placeholder=(
+        "e.g. 42553-HQ-LML or Nisco Industries"
+    ),
+    key="commodity_licence_search",
+)
+
+
+if licence_search.strip():
+
+    search_value = (
+        licence_search
+        .strip()
+        .casefold()
+    )
+
+    visible_licence_records = [
+        record
+        for record in matching_records
+        if (
+            search_value
+            in clean_text(
+                record.get(
+                    "licence_code"
+                )
+            ).casefold()
+            or
+            search_value
+            in clean_text(
+                record.get(
+                    "applicant"
+                )
+            ).casefold()
+        )
+    ]
+
+else:
+
+    visible_licence_records = (
+        matching_records
+    )
 # =========================================================
 # SUMMARY METRICS
 # =========================================================
@@ -692,21 +757,36 @@ st.subheader(
 )
 
 
+
+
 licence_table = licence_dataframe(
-    matching_records
+    visible_licence_records
 )
 
 
-st.caption(
-    f"{len(licence_table):,} records contain "
-    f"{selected_commodity}."
-)
+if licence_search.strip():
+
+    st.caption(
+        f"{len(licence_table):,} matching records "
+        f"within {len(matching_records):,} "
+        f"{selected_commodity} licensing records."
+    )
+
+else:
+
+    st.caption(
+        f"{len(licence_table):,} records contain "
+        f"{selected_commodity}."
+    )
 
 
-st.dataframe(
+licence_table_event = st.dataframe(
     licence_table,
     use_container_width=True,
     hide_index=True,
+    key="commodity_licence_results_table",
+    on_select="rerun",
+    selection_mode="single-row",
     column_config={
         "Licence code":
             st.column_config.TextColumn(
@@ -762,6 +842,129 @@ st.dataframe(
     },
 )
 
+# =========================================================
+# SELECTED LICENCE DETAILS
+# =========================================================
+
+selected_rows = (
+    licence_table_event.selection.rows
+)
+
+selected_record = None
+
+
+if selected_rows:
+
+    selected_index = selected_rows[0]
+
+    if (
+        0 <= selected_index
+        < len(visible_licence_records)
+    ):
+
+        selected_record = (
+            visible_licence_records[
+                selected_index
+            ]
+        )
+
+
+if selected_record is not None:
+
+    st.markdown(
+        "### Selected licence"
+    )
+
+    st.caption(
+        f"Structured licence record associated with "
+        f"{selected_commodity}."
+    )
+
+    display_licensing_record(
+        {
+            "record":
+                selected_record
+        }
+    )
+
+    source = clean_text(
+        selected_record.get(
+            "source_url"
+        )
+    )
+
+    if source:
+
+        st.link_button(
+            "Open official licensing source",
+            source,
+        )
+
+    # =====================================================
+    # CONTEXT NAVIGATION
+    # =====================================================
+
+    st.markdown(
+        "#### Explore this record"
+    )
+
+    nav_col_1, nav_col_2 = st.columns(
+        2
+    )
+
+    licence_code = clean_text(
+        selected_record.get(
+            "licence_code"
+        )
+    )
+
+    applicant = clean_text(
+        selected_record.get(
+            "applicant"
+        )
+    )
+
+    with nav_col_1:
+
+        if licence_code:
+
+            if st.button(
+                "Open in Licensing Explorer",
+                use_container_width=True,
+                key=(
+                    f"open_licensing_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "licence_search"
+                ] = licence_code
+
+                st.switch_page(
+                    "pages/1_Licensing_Explorer.py"
+                )
+
+    with nav_col_2:
+
+        if applicant:
+
+            if st.button(
+                "Open applicant profile",
+                use_container_width=True,
+                key=(
+                    f"open_applicant_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "applicant_search"
+                ] = applicant
+
+                st.switch_page(
+                    "pages/2_Applicant_Explorer.py"
+                )
 
 # =========================================================
 # EXPORT
