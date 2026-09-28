@@ -504,7 +504,407 @@ def route_query(
         ),
     }
 
+# =========================================================
+# EXPLICIT DOCUMENT SOURCE DETECTION
+# =========================================================
 
+SOURCE_TITLE_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "for",
+    "of",
+    "the",
+    "data",
+}
+
+
+def explicit_document_source_ids(
+    query: str,
+    chunks: list[dict],
+) -> set[str]:
+    """
+    Detect whether the user explicitly names one of the
+    documents in the MineLens corpus.
+
+    Example:
+
+        "What does World Mining Data 2026 say about
+        Zambia's copper production?"
+
+    should restrict document retrieval to:
+
+        world_mining_data_2026
+
+    Matching uses informative title tokens rather than
+    requiring the exact title word order.
+    """
+
+    query_tokens = set(
+        normalize_query(
+            query
+        ).split()
+    )
+
+    if not query_tokens:
+        return set()
+
+    source_titles: dict[str, str] = {}
+
+    for chunk in chunks:
+
+        source_id = str(
+            chunk.get(
+                "source_id"
+            )
+            or ""
+        ).strip()
+
+        title = str(
+            chunk.get(
+                "title"
+            )
+            or ""
+        ).strip()
+
+        if (
+            source_id
+            and title
+            and source_id
+            not in source_titles
+        ):
+
+            source_titles[
+                source_id
+            ] = title
+
+    matches: set[str] = set()
+
+    for source_id, title in (
+        source_titles.items()
+    ):
+
+        title_tokens = {
+            token
+            for token in normalize_query(
+                title
+            ).split()
+            if token
+            not in SOURCE_TITLE_STOPWORDS
+        }
+
+        # Avoid accidentally treating short/generic
+        # document titles as explicit source references.
+        if len(title_tokens) < 3:
+            continue
+
+        if title_tokens.issubset(
+            query_tokens
+        ):
+
+            matches.add(
+                source_id
+            )
+
+    return matches
+# =========================================================
+# DOCUMENT PRECISION RERANKING
+# =========================================================
+
+PRECISION_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "did",
+    "do",
+    "does",
+    "for",
+    "from",
+    "how",
+    "in",
+    "is",
+    "it",
+    "of",
+    "on",
+    "say",
+    "says",
+    "the",
+    "to",
+    "was",
+    "were",
+    "what",
+    "which",
+    "with",
+}
+
+
+ANSWER_NUMBER_PATTERN = re.compile(
+    r"""
+    (?:
+        (?:K|US\$|\$)\s*\d
+        |
+        \d+\.\d+
+        |
+        \d{1,3}(?:,\d{3})+
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+MONTH_YEAR_PATTERN = re.compile(
+    r"""
+    \b
+    (?:
+        january|february|march|april|may|june|
+        july|august|september|october|november|december
+    )
+    \s+
+    (?:19|20)\d{2}
+    \b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def document_precision_score(
+    query: str,
+    result: dict,
+) -> float:
+    """
+    Score a hybrid-search result for query-specific precision.
+
+    This complements RRF by rewarding:
+
+    - informative query-token coverage,
+    - important multi-word phrase matches,
+    - exact month/year matches,
+    - answer-like numeric evidence,
+    - sentences containing both query anchors and numbers.
+
+    It does not replace BM25 or semantic search.
+    """
+
+    chunk = result.get(
+        "chunk",
+        {},
+    )
+
+    raw_text = str(
+        chunk.get(
+            "text"
+        )
+        or ""
+    )
+
+    title = str(
+        chunk.get(
+            "title"
+        )
+        or ""
+    )
+
+    searchable = normalize_query(
+        f"{title} {raw_text}"
+    )
+
+    query_normalized = normalize_query(
+        query
+    )
+
+    query_tokens = [
+        token
+        for token in query_normalized.split()
+        if (
+            token
+            not in PRECISION_STOPWORDS
+            and len(token) > 1
+        )
+    ]
+
+    if not query_tokens:
+
+        return 0.0
+
+    searchable_tokens = set(
+        searchable.split()
+    )
+
+    # -----------------------------------------------------
+    # TOKEN COVERAGE
+    # -----------------------------------------------------
+
+    matched_tokens = sum(
+        token in searchable_tokens
+        for token in set(
+            query_tokens
+        )
+    )
+
+    coverage = (
+        matched_tokens
+        / len(
+            set(
+                query_tokens
+            )
+        )
+    )
+
+    score = (
+        coverage
+        * 2.0
+    )
+
+    # -----------------------------------------------------
+    # INFORMATIVE BIGRAMS
+    # -----------------------------------------------------
+
+    bigrams = [
+        " ".join(
+            query_tokens[
+                index:index + 2
+            ]
+        )
+        for index in range(
+            len(query_tokens) - 1
+        )
+    ]
+
+    matched_bigrams = [
+        bigram
+        for bigram in bigrams
+        if bigram in searchable
+    ]
+
+    score += (
+        len(
+            matched_bigrams
+        )
+        * 1.5
+    )
+
+    # -----------------------------------------------------
+    # DATE MATCHING
+    # -----------------------------------------------------
+
+    date_matches = [
+        match.group(0).casefold()
+        for match in MONTH_YEAR_PATTERN.finditer(
+            query
+        )
+    ]
+
+    for date_text in date_matches:
+
+        if date_text in searchable:
+
+            score += 2.0
+
+    # -----------------------------------------------------
+    # ANSWER-BEARING SENTENCES
+    # -----------------------------------------------------
+
+    sentences = re.split(
+        r"(?<=[.!?])\s+|\n+",
+        raw_text,
+    )
+
+    for sentence in sentences:
+
+        sentence_normalized = (
+            normalize_query(
+                sentence
+            )
+        )
+
+        anchor_match = any(
+            bigram
+            in sentence_normalized
+            for bigram
+            in matched_bigrams
+        )
+
+        date_match = (
+            not date_matches
+            or any(
+                date_text
+                in sentence_normalized
+                for date_text
+                in date_matches
+            )
+        )
+
+        numeric_match = bool(
+            ANSWER_NUMBER_PATTERN.search(
+                sentence
+            )
+        )
+
+        if (
+            anchor_match
+            and date_match
+        ):
+
+            score += 2.0
+
+            if numeric_match:
+
+                score += 4.0
+
+    return score
+
+
+def rerank_document_results(
+    query: str,
+    results: list[dict],
+    top_k: int,
+) -> list[dict]:
+    """
+    Rerank a larger hybrid candidate set using lightweight
+    query-specific precision signals.
+    """
+
+    reranked: list[dict] = []
+
+    for result in results:
+
+        result = dict(
+            result
+        )
+
+        result[
+            "precision_score"
+        ] = document_precision_score(
+            query=query,
+            result=result,
+        )
+
+        reranked.append(
+            result
+        )
+
+    reranked.sort(
+        key=lambda result: (
+            result.get(
+                "precision_score",
+                0.0,
+            ),
+            result.get(
+                "rrf_score",
+                0.0,
+            ),
+        ),
+        reverse=True,
+    )
+
+    return reranked[
+        :top_k
+    ]
 # ---------------------------------------------------------
 # Document search
 # ---------------------------------------------------------
@@ -540,7 +940,34 @@ def search_documents(
             include_superseded
         ),
     )
+    all_chunks = chunks
 
+    explicit_source_ids = (
+        explicit_document_source_ids(
+            query=query,
+            chunks=all_chunks,
+        )
+    )
+
+    if explicit_source_ids:
+
+        chunks = [
+            chunk
+            for chunk in all_chunks
+            if chunk.get(
+                "source_id"
+            )
+            in explicit_source_ids
+        ]
+
+        print(
+            "Explicit document source detected: "
+            + ", ".join(
+                sorted(
+                    explicit_source_ids
+                )
+            )
+        )
     print(
         f"Loaded {len(chunks)} "
         f"document chunks."
@@ -560,6 +987,19 @@ def search_documents(
         else "current"
     )
 
+    if explicit_source_ids:
+
+        source_suffix = "_".join(
+            sorted(
+                explicit_source_ids
+            )
+        )
+
+        cache_variant = (
+            f"{cache_variant}"
+            f"-source-{source_suffix}"
+        )    
+
     semantic_index = SemanticIndex(
         chunks,
         cache_variant=(
@@ -577,12 +1017,31 @@ def search_documents(
             semantic_index
         )
 
+    # Retrieve a larger shortlist first so the precision
+    # reranker can recover answer-bearing chunks that may sit
+    # below the initial RRF cutoff.
+    rerank_k = max(
+        top_k,
+        min(
+            candidate_k * 2,
+            60,
+        ),
+    )
+
+
     results = hybrid_search(
         query=query,
         bm25_index=bm25_index,
         semantic_index=semantic_index,
-        top_k=top_k,
+        top_k=rerank_k,
         candidate_k=candidate_k,
+    )
+
+
+    results = rerank_document_results(
+        query=query,
+        results=results,
+        top_k=top_k,
     )
     results = expand_document_results(
         query=query,
@@ -594,8 +1053,19 @@ def search_documents(
             ROUTE_DOCUMENTS
         ),
         "results": results,
+
+        # Full searchable document corpus size.
         "chunk_count": len(
+            all_chunks
+        ),
+
+        # Useful for debugging / frontend transparency.
+        "searched_chunk_count": len(
             chunks
+        ),
+
+        "explicit_source_ids": sorted(
+            explicit_source_ids
         ),
     }
 
