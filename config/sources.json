@@ -9,7 +9,6 @@
         "filename": "zambia_annual_mining_statistical_bulletin_2024.pdf",
         "status": "current",
         "enabled": true
-        
     },
     {
         "id": "national_critical_minerals_strategy_2024_2028",
@@ -68,15 +67,15 @@
         "enabled": true
     },
     {
-    "id": "local_content_regulations_2025",
-    "title": "Geological and Minerals Development Preference for Zambian Goods and Services Regulations 2025",
-    "agency": "Ministry of Mines and Minerals Development",
-    "document_type": "regulation",
-    "source_type": "pdf",
-    "url": "https://www.mmmd.gov.zm/wp-content/uploads/2025/12/The-Geological-and-Minerals-Development-Preference-for-Zambian-Goods-and-Services-Regulations-2025.pdf",
-    "filename": "zambia_mining_local_content_regulations_2025.pdf",
-    "status": "current",
-    "enabled": true
+        "id": "local_content_regulations_2025",
+        "title": "Geological and Minerals Development Preference for Zambian Goods and Services Regulations 2025",
+        "agency": "Ministry of Mines and Minerals Development",
+        "document_type": "regulation",
+        "source_type": "pdf",
+        "url": "https://www.mmmd.gov.zm/wp-content/uploads/2025/12/The-Geological-and-Minerals-Development-Preference-for-Zambian-Goods-and-Services-Regulations-2025.pdf",
+        "filename": "zambia_mining_local_content_regulations_2025.pdf",
+        "status": "current",
+        "enabled": true
     },
     {
         "id": "mining_rights_requirements",
@@ -130,6 +129,50 @@
         ],
         "url": "https://www.mmmd.gov.zm/wp-content/uploads/2024/09/PRESCRIBED-APPLICATION-FEES-AND-AREA-CHARGES-New.pdf",
         "filename": "zambia_mining_fees_area_charges_2024.pdf",
+        "enabled": true
+    },
+    {
+        "id": "usgs_zambia_minerals_yearbook_2024",
+        "title": "Zambia Minerals Yearbook 2024",
+        "agency": "U.S. Geological Survey - National Minerals Information Center",
+        "document_type": "country_minerals_report",
+        "source_type": "html",
+        "url": "https://www.usgs.gov/centers/national-minerals-information-center/zambia",
+        "filename": "zambia_usgs_minerals_yearbook_2024.html",
+        "status": "current",
+        "enabled": true
+    },
+    {
+        "id": "world_mining_data_2026",
+        "title": "World Mining Data 2026",
+        "agency": "Austrian Federal Ministry of Finance",
+        "document_type": "international_mining_statistics",
+        "source_type": "pdf",
+        "url": "https://www.bmf.gv.at/dam/jcr:b778238b-9952-4fee-84ab-f3293b00c4e9/WMD2026.pdf?reftype=.pdf",
+        "filename": "world_mining_data_2026.pdf",
+        "status": "current",
+        "enabled": true
+    },
+    {
+        "id": "zamstats_monthly_bulletin_september_2026",
+        "title": "Zambia Statistics Agency Monthly Bulletin - September 2026",
+        "agency": "Zambia Statistics Agency",
+        "document_type": "monthly_statistical_bulletin",
+        "source_type": "pdf",
+        "url": "https://www.zamstats.gov.zm/wp-content/uploads/2026/09/Vol-282-of-2026-The-Monthly-September-Flnal.pdf",
+        "filename": "zambia_zamstats_monthly_bulletin_september_2026.pdf",
+        "status": "current",
+        "enabled": true
+    },
+    {
+        "id": "zamstats_monthly_bulletin_august_2026",
+        "title": "Zambia Statistics Agency Monthly Bulletin - August 2026",
+        "agency": "Zambia Statistics Agency",
+        "document_type": "monthly_statistical_bulletin",
+        "source_type": "pdf",
+        "url": "https://www.zamstats.gov.zm/wp-content/uploads/2026/09/Vol-281-of-2026-The-Monthly-August-08_09_26.pdf",
+        "filename": "zambia_zamstats_monthly_bulletin_august_2026.pdf",
+        "status": "current",
         "enabled": true
     }
 ]
