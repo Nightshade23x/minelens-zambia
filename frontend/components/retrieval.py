@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app.router import ROUTE_LICENSING
+from app.router import (
+    ROUTE_LICENSING,
+    ROUTE_MINING_STATISTICS,
+)
 from frontend.utils.display import (
     clean_text,
     looks_like_filename,
@@ -161,7 +164,49 @@ def display_raw_licensing_results(
                 expanded=False,
             )
 
+def display_raw_statistics_results(
+    results: list[dict],
+) -> None:
+    """
+    Developer view for structured mining statistics.
+    """
 
+    for index, record in enumerate(
+        results,
+        start=1,
+    ):
+
+        country = clean_text(
+            record.get(
+                "country"
+            )
+        )
+
+        commodity = clean_text(
+            record.get(
+                "commodity"
+            )
+        )
+
+        year = record.get(
+            "year"
+        )
+
+
+        with st.expander(
+            (
+                f"{index}. "
+                f"{country} — "
+                f"{commodity} — "
+                f"{year}"
+            ),
+            expanded=False,
+        ):
+
+            st.json(
+                record,
+                expanded=False,
+            )
 def display_retrieval_details(
     search_result: dict,
 ) -> None:
@@ -188,16 +233,23 @@ def display_retrieval_details(
         [],
     )
 
+    route = search_result.get(
+        "route"
+    )
+
+
     if (
-        search_result.get("route")
+        route
         == ROUTE_LICENSING
     ):
+
         filters = search_result.get(
             "filters",
             {},
         )
 
         if filters:
+
             st.markdown(
                 "**Structured filters**"
             )
@@ -211,7 +263,48 @@ def display_retrieval_details(
             results
         )
 
-    else:
-        display_raw_document_results(
+
+    elif (
+        route
+        == ROUTE_MINING_STATISTICS
+    ):
+
+        st.markdown(
+            "**Structured statistics query**"
+        )
+
+        st.json(
+            {
+                "intent":
+                    search_result.get(
+                        "statistics_intent"
+                    ),
+
+                "commodity":
+                    search_result.get(
+                        "commodity"
+                    ),
+
+                "countries":
+                    search_result.get(
+                        "countries"
+                    ),
+
+                "years":
+                    search_result.get(
+                        "years"
+                    ),
+            },
+            expanded=False,
+        )
+
+        display_raw_statistics_results(
             results
         )
+
+
+    else:
+
+        display_raw_document_results(
+            results
+    )   

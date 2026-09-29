@@ -56,11 +56,16 @@ from app.rag import (  # noqa: E402
 from app.router import (  # noqa: E402
     ROUTE_DOCUMENTS,
     ROUTE_LICENSING,
+    ROUTE_MINING_STATISTICS,
     route_query,
     search_mine,
 )
-
-
+from app.mining_statistics import (  # noqa: E402
+    answer_statistics_result,
+)
+from frontend.components.statistics import (
+    display_statistics_results,
+)
 # =========================================================
 # PAGE CONFIGURATION
 # =========================================================
@@ -676,10 +681,21 @@ if submitted:
                 force_route=force_route,
             )
 
-            evidence = normalize_evidence(
-                search_result=search_result,
-                max_evidence=evidence_k,
-            )
+            if (
+                search_result.get(
+                    "route"
+                )
+                == ROUTE_MINING_STATISTICS
+            ):
+
+                evidence = []
+
+            else:
+
+                evidence = normalize_evidence(
+                    search_result=search_result,
+                    max_evidence=evidence_k,
+                )            
 
         except Exception as error:
 
@@ -704,13 +720,28 @@ if submitted:
 
         try:
 
-            answer_result = (
-                answer_from_evidence(
-                    question=query,
-                    evidence=evidence,
-                    model=model_override,
+            if (
+                search_result.get(
+                    "route"
                 )
-            )
+                == ROUTE_MINING_STATISTICS
+            ):
+
+                answer_result = (
+                    answer_statistics_result(
+                        search_result
+                    )
+                )
+
+            else:
+
+                answer_result = (
+                    answer_from_evidence(
+                        question=query,
+                        evidence=evidence,
+                        model=model_override,
+                    )
+                )
 
             generation_error = None
 
@@ -798,7 +829,32 @@ if result_state:
     else:
 
         frontend_answer = None
+        if (
+            route_info.get(
+                "route"
+            )
+            == ROUTE_MINING_STATISTICS
+        ):
 
+            frontend_answer = (
+                answer_result.get(
+                    "answer",
+                    ""
+                )
+            )
+
+        elif (
+            route_info.get(
+                "route"
+            )
+            == ROUTE_LICENSING
+        ):
+
+            frontend_answer = (
+                licensing_answer_summary(
+                    evidence
+                )
+            )
         if (
             route_info.get(
                 "route"
@@ -874,11 +930,38 @@ if result_state:
             border=True,
         ):
 
-            st.metric(
-                "Evidence",
-                len(
+            if (
+                route_info.get(
+                    "route"
+                )
+                == ROUTE_MINING_STATISTICS
+            ):
+
+                count_label = (
+                    "Records"
+                )
+
+                count_value = len(
+                    search_result.get(
+                        "results",
+                        [],
+                    )
+                )
+
+            else:
+
+                count_label = (
+                    "Evidence"
+                )
+
+                count_value = len(
                     evidence
-                ),
+                )
+
+
+            st.metric(
+                count_label,
+                count_value,
             )
 
     with metadata_3:
@@ -924,6 +1007,20 @@ if result_state:
     ):
         display_document_evidence(
             evidence
+        )
+    # =====================================================
+# MINING STATISTICS
+# =====================================================
+
+    if (
+        route_info.get(
+            "route"
+        )
+        == ROUTE_MINING_STATISTICS
+    ):
+
+        display_statistics_results(
+            search_result
         )
     # =====================================================
     # LICENSING RECORDS

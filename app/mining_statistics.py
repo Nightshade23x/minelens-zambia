@@ -1046,6 +1046,473 @@ def query_mining_statistics(
             None,
     }
 # =========================================================
+# DETERMINISTIC ANSWERS
+# =========================================================
+
+def human_unit(
+    unit: str | None,
+) -> str:
+    """
+    Convert WMD unit labels into readable display units.
+    """
+
+    mapping = {
+        "metr. t": "metric tonnes",
+        "kg": "kg",
+        "mio m3": "million m³",
+    }
+
+    normalized = (
+        str(unit or "")
+        .strip()
+        .casefold()
+    )
+
+    return mapping.get(
+        normalized,
+        str(unit or "").strip(),
+    )
+
+
+def ordinal(
+    value: int | None,
+) -> str:
+    """
+    Convert an integer into an ordinal label.
+    """
+
+    if value is None:
+        return "—"
+
+    if 10 <= value % 100 <= 20:
+        suffix = "th"
+
+    else:
+        suffix = {
+            1: "st",
+            2: "nd",
+            3: "rd",
+        }.get(
+            value % 10,
+            "th",
+        )
+
+    return (
+        f"{value}{suffix}"
+    )
+
+
+def statistics_source(
+    records: list[dict],
+) -> dict | None:
+    """
+    Build one source object for structured WMD answers.
+    """
+
+    if not records:
+        return None
+
+    record = records[0]
+
+    return {
+        "source_id": "S1",
+        "title": record.get(
+            "dataset_title",
+            "World Mining Data 2026",
+        ),
+        "agency": record.get(
+            "agency",
+        ),
+        "source_url": record.get(
+            "source_url",
+        ),
+    }
+
+
+def answer_statistics_result(
+    search_result: dict,
+) -> dict:
+    """
+    Build a deterministic answer from a structured
+    mining-statistics search result.
+
+    No language model is required.
+    """
+
+    records = search_result.get(
+        "results",
+        [],
+    )
+
+    intent = search_result.get(
+        "statistics_intent",
+        "production",
+    )
+
+    commodity = search_result.get(
+        "commodity",
+    )
+
+
+    if not records:
+
+        return {
+            "answer": (
+                "No matching structured "
+                "World Mining Data statistics "
+                "were found for this query."
+            ),
+            "model": None,
+            "generation_method": (
+                "structured-statistics"
+            ),
+            "citations": [],
+            "sources": [],
+        }
+
+
+    source = statistics_source(
+        records
+    )
+
+    sources = (
+        [source]
+        if source
+        else []
+    )
+
+
+    # -----------------------------------------------------
+    # TREND
+    # -----------------------------------------------------
+
+    if intent == "trend":
+
+        ordered = sorted(
+            records,
+            key=lambda record:
+                record["year"],
+        )
+
+        first = ordered[0]
+        last = ordered[-1]
+
+        first_value = float(
+            first["production"]
+        )
+
+        last_value = float(
+            last["production"]
+        )
+
+        absolute_change = (
+            last_value
+            - first_value
+        )
+
+        if first_value:
+
+            percentage_change = (
+                absolute_change
+                / first_value
+                * 100
+            )
+
+        else:
+
+            percentage_change = None
+
+
+        if absolute_change > 0:
+            direction = "increased"
+
+        elif absolute_change < 0:
+            direction = "decreased"
+
+        else:
+            direction = "was unchanged"
+
+
+        change_value = abs(
+            absolute_change
+        )
+
+        unit = human_unit(
+            last.get(
+                "unit"
+            )
+        )
+
+
+        if percentage_change is None:
+
+            change_text = (
+                f"{format_number(change_value)} "
+                f"{unit}"
+            )
+
+        else:
+
+            change_text = (
+                f"{format_number(change_value)} "
+                f"{unit} "
+                f"({abs(percentage_change):.2f}%)"
+            )
+
+
+        answer = (
+            f"{last['country']}'s "
+            f"{commodity.lower()} production "
+            f"{direction} from "
+            f"**{format_number(first_value)} "
+            f"{unit} in {first['year']}** to "
+            f"**{format_number(last_value)} "
+            f"{unit} in {last['year']}**. "
+        )
+
+
+        if absolute_change != 0:
+
+            answer += (
+                f"The overall change was "
+                f"**{change_text}**. [S1]"
+            )
+
+        else:
+
+            answer += (
+                "There was no overall change. "
+                "[S1]"
+            )
+
+
+        return {
+            "answer": answer,
+            "model": None,
+            "generation_method": (
+                "structured-statistics"
+            ),
+            "citations": [
+                "S1"
+            ],
+            "sources": sources,
+        }
+
+
+    # -----------------------------------------------------
+    # GLOBAL RANKING LIST
+    # -----------------------------------------------------
+
+    if (
+        intent == "world_rank"
+        and not search_result.get(
+            "countries"
+        )
+    ):
+
+        year = records[0][
+            "year"
+        ]
+
+        lines = [
+            (
+                f"World Mining Data 2026 "
+                f"ranks the following countries "
+                f"for {commodity.lower()} "
+                f"production in {year}:"
+            )
+        ]
+
+
+        for record in records:
+
+            rank = (
+                record.get(
+                    "rank_2024"
+                )
+            )
+
+            lines.append(
+                (
+                    f"{ordinal(rank)} — "
+                    f"{record['country']}: "
+                    f"{format_number(record['production'])} "
+                    f"{human_unit(record.get('unit'))}"
+                )
+            )
+
+
+        lines.append(
+            "[S1]"
+        )
+
+
+        return {
+            "answer": "\n\n".join(
+                lines
+            ),
+            "model": None,
+            "generation_method": (
+                "structured-statistics"
+            ),
+            "citations": [
+                "S1"
+            ],
+            "sources": sources,
+        }
+
+
+    # -----------------------------------------------------
+    # SINGLE / MULTI-COUNTRY RECORD ANSWERS
+    # -----------------------------------------------------
+
+    if len(records) == 1:
+
+        record = records[0]
+
+        country = record[
+            "country"
+        ]
+
+        year = record[
+            "year"
+        ]
+
+        production = (
+            format_number(
+                record[
+                    "production"
+                ]
+            )
+        )
+
+        unit = human_unit(
+            record.get(
+                "unit"
+            )
+        )
+
+        share = record.get(
+            "world_share_percent"
+        )
+
+        rank = record.get(
+            "rank_2024"
+        )
+
+
+        if intent == "world_share":
+
+            if share is None:
+
+                answer = (
+                    f"World-production share data "
+                    f"is not available for "
+                    f"{country}'s "
+                    f"{commodity.lower()} production "
+                    f"in {year}. [S1]"
+                )
+
+            else:
+
+                answer = (
+                    f"{country} accounted for "
+                    f"**{share:.2f}% of world "
+                    f"{commodity.lower()} production "
+                    f"in {year}**, producing "
+                    f"{production} {unit}. [S1]"
+                )
+
+
+        elif intent == "world_rank":
+
+            if rank is None:
+
+                answer = (
+                    f"A World Mining Data ranking is "
+                    f"not available for {country}'s "
+                    f"{commodity.lower()} production "
+                    f"in {year}. [S1]"
+                )
+
+            else:
+
+                answer = (
+                    f"{country} ranked "
+                    f"**{ordinal(rank)} globally** "
+                    f"for {commodity.lower()} production "
+                    f"in {year}, producing "
+                    f"{production} {unit}"
+                )
+
+                if share is not None:
+
+                    answer += (
+                        f" and accounting for "
+                        f"{share:.2f}% of world "
+                        "production"
+                    )
+
+                answer += ". [S1]"
+
+
+        else:
+
+            answer = (
+                f"{country} produced "
+                f"**{production} {unit} of "
+                f"{commodity.lower()} in {year}**. "
+                "[S1]"
+            )
+
+
+        return {
+            "answer": answer,
+            "model": None,
+            "generation_method": (
+                "structured-statistics"
+            ),
+            "citations": [
+                "S1"
+            ],
+            "sources": sources,
+        }
+
+
+    # -----------------------------------------------------
+    # COUNTRY COMPARISON
+    # -----------------------------------------------------
+
+    lines = []
+
+    for record in records:
+
+        lines.append(
+            (
+                f"**{record['country']}** — "
+                f"{format_number(record['production'])} "
+                f"{human_unit(record.get('unit'))}"
+            )
+        )
+
+
+    return {
+        "answer": (
+            "\n\n".join(
+                lines
+            )
+            + "\n\n[S1]"
+        ),
+        "model": None,
+        "generation_method": (
+            "structured-statistics"
+        ),
+        "citations": [
+            "S1"
+        ],
+        "sources": sources,
+    }
+# =========================================================
 # CLI
 # =========================================================
 
