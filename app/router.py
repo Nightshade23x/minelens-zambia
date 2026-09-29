@@ -27,19 +27,30 @@ from app.search import (
     load_chunks,
 )
 
-
+from app.mining_statistics import (
+    has_statistics_intent,
+    load_mining_statistics,
+    query_mining_statistics,
+)
 # ---------------------------------------------------------
 # Routes
 # ---------------------------------------------------------
-
 ROUTE_DOCUMENTS = "documents"
 
 ROUTE_LICENSING = "licensing"
 
+ROUTE_MINING_STATISTICS = (
+    "mining_statistics"
+)
+
+
 VALID_ROUTES = {
     ROUTE_DOCUMENTS,
     ROUTE_LICENSING,
+    ROUTE_MINING_STATISTICS,
 }
+
+
 
 
 # ---------------------------------------------------------
@@ -375,7 +386,39 @@ def route_query(
             query
         )
     )
+    # -----------------------------------------------------
+    # Structured mining statistics
+    # -----------------------------------------------------
 
+    try:
+
+        statistics_records = (
+            load_mining_statistics()
+        )
+
+    except FileNotFoundError:
+
+        statistics_records = []
+
+
+    if (
+        statistics_records
+        and has_statistics_intent(
+            query=query,
+            records=statistics_records,
+        )
+    ):
+
+        return {
+            "route": (
+                ROUTE_MINING_STATISTICS
+            ),
+            "reason": (
+                "The query asks for structured "
+                "mineral production, world-share, "
+                "ranking or trend statistics."
+            ),
+        }
     # -----------------------------------------------------
     # Strong document intent
     # -----------------------------------------------------
@@ -1117,7 +1160,108 @@ def search_licensing(
         ),
     }
 
+# ---------------------------------------------------------
+# Mining statistics search
+# ---------------------------------------------------------
 
+def search_mining_statistics(
+    query: str,
+    top_k: int = 5,
+) -> dict:
+    """
+    Run structured World Mining Data search.
+    """
+
+    if top_k <= 0:
+
+        raise ValueError(
+            "top_k must be greater than zero."
+        )
+
+
+    records = (
+        load_mining_statistics()
+    )
+
+
+    print(
+        f"Loaded {len(records):,} "
+        "mining statistics records."
+    )
+
+
+    result = (
+        query_mining_statistics(
+            query=query,
+            records=records,
+        )
+    )
+
+
+    results = (
+        result.get(
+            "results",
+            []
+        )
+    )
+
+
+    # Only limit ranking-style result sets.
+    # Trend series should retain the full requested period.
+    if (
+        result.get(
+            "intent"
+        )
+        == "world_rank"
+        and not result.get(
+            "countries"
+        )
+    ):
+
+        results = results[
+            :top_k
+        ]
+
+
+    return {
+        "route":
+            ROUTE_MINING_STATISTICS,
+
+        "results":
+            results,
+
+        "statistics_intent":
+            result.get(
+                "intent"
+            ),
+
+        "commodity":
+            result.get(
+                "commodity"
+            ),
+
+        "countries":
+            result.get(
+                "countries",
+                [],
+            ),
+
+        "years":
+            result.get(
+                "years",
+                [],
+            ),
+
+        "error":
+            result.get(
+                "error"
+            ),
+
+        "record_count":
+            len(
+                records
+            ),
+    }
 # ---------------------------------------------------------
 # Unified MineLens search
 # ---------------------------------------------------------
@@ -1157,7 +1301,8 @@ def search_mine(
 
             raise ValueError(
                 "force_route must be "
-                "'documents' or 'licensing'."
+                "'documents', 'licensing' "
+                "or 'mining_statistics'."
             )
 
         route_info = {
@@ -1182,6 +1327,20 @@ def search_mine(
             query=query,
             top_k=top_k,
         )
+
+
+    elif (
+        selected_route
+        == ROUTE_MINING_STATISTICS
+    ):
+
+        payload = (
+            search_mining_statistics(
+                query=query,
+                top_k=top_k,
+            )
+        )
+
 
     else:
 
