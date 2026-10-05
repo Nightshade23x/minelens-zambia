@@ -2,47 +2,42 @@ from __future__ import annotations
 
 import re
 
+from app.context_expansion import (
+    expand_document_results,
+)
 from app.embeddings import (
     SemanticIndex,
     load_embedding_cache,
     save_embedding_cache,
 )
-from app.context_expansion import (
-    expand_document_results,
-)
 from app.hybrid import (
     DEFAULT_CANDIDATE_K,
     hybrid_search,
 )
-
 from app.licensing_search import (
     infer_decision,
     infer_licence_code,
     load_licensing_records,
     search_licensing_records,
 )
-
-from app.search import (
-    BM25Index,
-    load_chunks,
-)
-
 from app.mining_statistics import (
     has_statistics_intent,
     load_mining_statistics,
     query_mining_statistics,
 )
+from app.search import (
+    BM25Index,
+    load_chunks,
+)
+
+
 # ---------------------------------------------------------
 # Routes
 # ---------------------------------------------------------
+
 ROUTE_DOCUMENTS = "documents"
-
 ROUTE_LICENSING = "licensing"
-
-ROUTE_MINING_STATISTICS = (
-    "mining_statistics"
-)
-
+ROUTE_MINING_STATISTICS = "mining_statistics"
 
 VALID_ROUTES = {
     ROUTE_DOCUMENTS,
@@ -51,24 +46,9 @@ VALID_ROUTES = {
 }
 
 
-
-
 # ---------------------------------------------------------
 # Router configuration
 # ---------------------------------------------------------
-
-# These signals strongly indicate that the user wants
-# information from legislation, policy, statistics,
-# application requirements, fees, or other documents.
-#
-# They are checked BEFORE licensing-record signals.
-#
-# This is important for questions such as:
-#
-#   "How much does an approved mining licence cost?"
-#
-# which contains "approved" but is still a fee/document
-# question.
 
 DOCUMENT_INTENT_PHRASES = (
     "fee",
@@ -118,10 +98,6 @@ DOCUMENT_INTENT_PHRASES = (
     "investment policy",
 )
 
-
-# Terms that suggest the user wants individual licensing
-# records rather than general mining documents.
-
 STRUCTURED_ENTITY_PHRASES = (
     "applicant",
     "applicants",
@@ -135,7 +111,6 @@ STRUCTURED_ENTITY_PHRASES = (
     "granted",
 )
 
-
 LISTING_WORDS = (
     "which",
     "who",
@@ -143,7 +118,6 @@ LISTING_WORDS = (
     "show",
     "find",
 )
-
 
 LOCATION_PREPOSITIONS = (
     "in",
@@ -153,16 +127,50 @@ LOCATION_PREPOSITIONS = (
     "near",
 )
 
+MINING_RIGHT_REQUIREMENT_TERMS = (
+    "requirement",
+    "requirements",
+    "required",
+    "documents required",
+    "information required",
+    "what information",
+    "need to provide",
+    "must provide",
+    "how to apply",
+    "application process",
+)
+
+MINING_RIGHT_CONTEXT_TERMS = (
+    "mining licence",
+    "mining license",
+    "mining licences",
+    "mining licenses",
+    "mining right",
+    "mining rights",
+    "exploration licence",
+    "exploration license",
+    "large-scale mining",
+    "large scale mining",
+    "small-scale mining",
+    "small scale mining",
+    "artisanal mining",
+)
+
+MINING_RIGHT_REQUIREMENT_SOURCE_IDS = {
+    "mining_rights_requirements",
+    "application_for_mining_right",
+}
+
 
 # ---------------------------------------------------------
-# Helpers
+# General helpers
 # ---------------------------------------------------------
 
 def normalize_query(
     query: str,
 ) -> str:
     """
-    Normalize whitespace and casing for routing.
+    Normalize whitespace and casing for routing/search logic.
     """
 
     return " ".join(
@@ -175,12 +183,11 @@ def contains_term(
     term: str,
 ) -> bool:
     """
-    Check a term using word boundaries for single
-    words and substring matching for phrases.
+    Check a term using word boundaries for single words
+    and substring matching for phrases.
     """
 
     if " " in term:
-
         return term in text
 
     return (
@@ -209,51 +216,194 @@ def contains_any(
     )
 
 
+def chunk_source_id(
+    chunk: dict,
+) -> str:
+    """
+    Return a chunk's canonical MineLens source id.
+
+    Older processed chunks do not always contain source_id,
+    so known legacy filenames are mapped back to the source
+    ids used by config/sources.json.
+    """
+
+    source_id = chunk.get(
+        "source_id"
+    )
+
+    if source_id:
+        return str(
+            source_id
+        ).strip()
+
+    metadata = chunk.get(
+        "metadata",
+        {},
+    )
+
+    if isinstance(
+        metadata,
+        dict,
+    ):
+        source_id = metadata.get(
+            "source_id"
+        )
+
+        if source_id:
+            return str(
+                source_id
+            ).strip()
+
+    candidate_values: list[str] = []
+
+    for key in (
+        "title",
+        "document",
+        "filename",
+    ):
+        value = chunk.get(
+            key
+        )
+
+        if value:
+            candidate_values.append(
+                str(
+                    value
+                )
+            )
+
+    if isinstance(
+        metadata,
+        dict,
+    ):
+        for key in (
+            "title",
+            "document",
+            "filename",
+        ):
+            value = metadata.get(
+                key
+            )
+
+            if value:
+                candidate_values.append(
+                    str(
+                        value
+                    )
+                )
+
+    searchable = normalize_query(
+        " ".join(
+            candidate_values
+        )
+    ).replace(
+        "-",
+        "_",
+    ).replace(
+        " ",
+        "_",
+    )
+
+    if (
+        "mining_rights_requirements"
+        in searchable
+    ):
+        return (
+            "mining_rights_requirements"
+        )
+
+    if (
+        "application_for_mining_right"
+        in searchable
+    ):
+        return (
+            "application_for_mining_right"
+        )
+
+    return ""
+
+
+def chunk_title(
+    chunk: dict,
+) -> str:
+    """
+    Return the best available human-readable chunk title.
+    """
+
+    for key in (
+        "title",
+        "document",
+    ):
+        value = chunk.get(
+            key
+        )
+
+        if value:
+            return str(
+                value
+            ).strip()
+
+    metadata = chunk.get(
+        "metadata",
+        {},
+    )
+
+    if isinstance(
+        metadata,
+        dict,
+    ):
+        for key in (
+            "title",
+            "document",
+        ):
+            value = metadata.get(
+                key
+            )
+
+            if value:
+                return str(
+                    value
+                ).strip()
+
+    return ""
+
+
+# ---------------------------------------------------------
+# Licensing-context helpers
+# ---------------------------------------------------------
+
 def has_licensing_context(
     query: str,
 ) -> bool:
     """
-    Determine whether a query talks about mining
-    licensing records.
+    Determine whether a query talks about mining licensing
+    records.
 
-    This deliberately does not mean that the query MUST
-    route to structured licensing search. Document intent
-    such as fees or requirements has higher priority.
+    Document intent such as fees or requirements still has
+    higher routing priority.
     """
 
     normalized = normalize_query(
         query
     )
 
-    # licence / license / licences / licenses
-
     if re.search(
         r"\blicen[cs](?:e|es)\b",
         normalized,
     ):
-
         return True
-
-    # mining right / rights
 
     if re.search(
         r"\b(?:mining|exploration)\s+rights?\b",
         normalized,
     ):
-
         return True
 
     if (
         "artisanal mining right"
         in normalized
     ):
-
         return True
-
-    # Queries such as:
-    #
-    #   which mining applications were approved
-    #   exploration applications rejected
 
     if re.search(
         (
@@ -263,7 +413,6 @@ def has_licensing_context(
         ),
         normalized,
     ):
-
         return True
 
     return False
@@ -274,9 +423,6 @@ def has_plural_licensing_context(
 ) -> bool:
     """
     Detect plural licensing language.
-
-    Useful for location-constrained queries such as:
-        copper licences in Solwezi
     """
 
     normalized = normalize_query(
@@ -287,14 +433,12 @@ def has_plural_licensing_context(
         r"\blicen[cs]es\b",
         normalized,
     ):
-
         return True
 
     if re.search(
         r"\b(?:mining|exploration)\s+rights\b",
         normalized,
     ):
-
         return True
 
     return False
@@ -305,10 +449,7 @@ def has_location_style_constraint(
 ) -> bool:
     """
     Detect language suggesting a geographically filtered
-    record query.
-
-    The structured licensing engine later resolves the
-    actual province/district against its dataset.
+    licensing-record query.
     """
 
     normalized = normalize_query(
@@ -338,21 +479,9 @@ def route_query(
 ) -> dict:
     """
     Decide which MineLens subsystem should handle a query.
-
-    Returns:
-        {
-            "route": "documents" | "licensing",
-            "reason": "...",
-        }
-
-    Routing is deterministic and intentionally
-    conservative: ambiguous questions remain in document
-    retrieval unless there is clear structured-record
-    intent.
     """
 
     if not query.strip():
-
         raise ValueError(
             "Query must not be empty."
         )
@@ -361,20 +490,14 @@ def route_query(
         query
     )
 
-    # -----------------------------------------------------
-    # Exact licence-code lookup
-    # -----------------------------------------------------
-
+    # Exact licence-code lookup.
     licence_code = infer_licence_code(
         query
     )
 
     if licence_code is not None:
-
         return {
-            "route": (
-                ROUTE_LICENSING
-            ),
+            "route": ROUTE_LICENSING,
             "reason": (
                 "The query contains an exact "
                 f"licence code: {licence_code}."
@@ -386,20 +509,16 @@ def route_query(
             query
         )
     )
-    # -----------------------------------------------------
-    # Structured mining statistics
-    # -----------------------------------------------------
 
+    # Structured mining statistics gets priority over the
+    # general document-statistics route when the query can
+    # be answered from normalized WMD records.
     try:
-
         statistics_records = (
             load_mining_statistics()
         )
-
     except FileNotFoundError:
-
         statistics_records = []
-
 
     if (
         statistics_records
@@ -408,7 +527,6 @@ def route_query(
             records=statistics_records,
         )
     ):
-
         return {
             "route": (
                 ROUTE_MINING_STATISTICS
@@ -419,19 +537,14 @@ def route_query(
                 "ranking or trend statistics."
             ),
         }
-    # -----------------------------------------------------
-    # Strong document intent
-    # -----------------------------------------------------
 
+    # Strong documentary intent.
     if contains_any(
         normalized,
         DOCUMENT_INTENT_PHRASES,
     ):
-
         return {
-            "route": (
-                ROUTE_DOCUMENTS
-            ),
+            "route": ROUTE_DOCUMENTS,
             "reason": (
                 "The query asks for documentary "
                 "information such as fees, "
@@ -440,10 +553,7 @@ def route_query(
             ),
         }
 
-    # -----------------------------------------------------
-    # Licensing committee decision
-    # -----------------------------------------------------
-
+    # Licensing committee decision.
     decision = infer_decision(
         query
     )
@@ -452,22 +562,16 @@ def route_query(
         licensing_context
         and decision is not None
     ):
-
         return {
-            "route": (
-                ROUTE_LICENSING
-            ),
+            "route": ROUTE_LICENSING,
             "reason": (
                 "The query asks about individual "
-                f"licensing records with decision "
+                "licensing records with decision "
                 f"status '{decision}'."
             ),
         }
 
-    # -----------------------------------------------------
-    # Explicit entity / committee language
-    # -----------------------------------------------------
-
+    # Explicit entity / committee language.
     if (
         licensing_context
         and contains_any(
@@ -475,11 +579,8 @@ def route_query(
             STRUCTURED_ENTITY_PHRASES,
         )
     ):
-
         return {
-            "route": (
-                ROUTE_LICENSING
-            ),
+            "route": ROUTE_LICENSING,
             "reason": (
                 "The query asks about companies, "
                 "applicants, decisions or other "
@@ -487,10 +588,7 @@ def route_query(
             ),
         }
 
-    # -----------------------------------------------------
-    # Listing requests
-    # -----------------------------------------------------
-
+    # Listing requests.
     if (
         licensing_context
         and contains_any(
@@ -498,21 +596,15 @@ def route_query(
             LISTING_WORDS,
         )
     ):
-
         return {
-            "route": (
-                ROUTE_LICENSING
-            ),
+            "route": ROUTE_LICENSING,
             "reason": (
                 "The query asks to identify or list "
                 "individual licensing records."
             ),
         }
 
-    # -----------------------------------------------------
-    # Geographic filtering
-    # -----------------------------------------------------
-
+    # Geographic filtering.
     if (
         has_plural_licensing_context(
             query
@@ -521,25 +613,16 @@ def route_query(
             query
         )
     ):
-
         return {
-            "route": (
-                ROUTE_LICENSING
-            ),
+            "route": ROUTE_LICENSING,
             "reason": (
                 "The query appears to request "
                 "location-filtered licensing records."
             ),
         }
 
-    # -----------------------------------------------------
-    # Default: documents
-    # -----------------------------------------------------
-
     return {
-        "route": (
-            ROUTE_DOCUMENTS
-        ),
+        "route": ROUTE_DOCUMENTS,
         "reason": (
             "No strong structured-record intent was "
             "detected, so the query will use hybrid "
@@ -547,9 +630,10 @@ def route_query(
         ),
     }
 
-# =========================================================
-# EXPLICIT DOCUMENT SOURCE DETECTION
-# =========================================================
+
+# ---------------------------------------------------------
+# Document source selection
+# ---------------------------------------------------------
 
 SOURCE_TITLE_STOPWORDS = {
     "a",
@@ -562,6 +646,26 @@ SOURCE_TITLE_STOPWORDS = {
 }
 
 
+def title_tokens(
+    value: str,
+) -> set[str]:
+    """
+    Return normalized alphanumeric title/query tokens.
+    """
+
+    return {
+        token
+        for token in re.findall(
+            r"[a-z0-9]+",
+            normalize_query(
+                value
+            ),
+        )
+        if token
+        not in SOURCE_TITLE_STOPWORDS
+    }
+
+
 def explicit_document_source_ids(
     query: str,
     chunks: list[dict],
@@ -569,46 +673,28 @@ def explicit_document_source_ids(
     """
     Detect whether the user explicitly names one of the
     documents in the MineLens corpus.
-
-    Example:
-
-        "What does World Mining Data 2026 say about
-        Zambia's copper production?"
-
-    should restrict document retrieval to:
-
-        world_mining_data_2026
-
-    Matching uses informative title tokens rather than
-    requiring the exact title word order.
     """
 
-    query_tokens = set(
-        normalize_query(
-            query
-        ).split()
+    query_tokens = title_tokens(
+        query
     )
 
     if not query_tokens:
         return set()
 
-    source_titles: dict[str, str] = {}
+    source_titles: dict[
+        str,
+        str,
+    ] = {}
 
     for chunk in chunks:
+        source_id = chunk_source_id(
+            chunk
+        )
 
-        source_id = str(
-            chunk.get(
-                "source_id"
-            )
-            or ""
-        ).strip()
-
-        title = str(
-            chunk.get(
-                "title"
-            )
-            or ""
-        ).strip()
+        title = chunk_title(
+            chunk
+        )
 
         if (
             source_id
@@ -616,43 +702,81 @@ def explicit_document_source_ids(
             and source_id
             not in source_titles
         ):
-
             source_titles[
                 source_id
             ] = title
 
-    matches: set[str] = set()
+    matches: set[
+        str
+    ] = set()
 
     for source_id, title in (
         source_titles.items()
     ):
+        tokens = title_tokens(
+            title
+        )
 
-        title_tokens = {
-            token
-            for token in normalize_query(
-                title
-            ).split()
-            if token
-            not in SOURCE_TITLE_STOPWORDS
-        }
-
-        # Avoid accidentally treating short/generic
-        # document titles as explicit source references.
-        if len(title_tokens) < 3:
+        if len(tokens) < 3:
             continue
 
-        if title_tokens.issubset(
+        if tokens.issubset(
             query_tokens
         ):
-
             matches.add(
                 source_id
             )
 
     return matches
-# =========================================================
-# DOCUMENT PRECISION RERANKING
-# =========================================================
+
+
+def preferred_document_source_ids(
+    query: str,
+    chunks: list[dict],
+) -> set[str]:
+    """
+    Select authoritative application/requirements sources
+    for clear mining-right requirement questions.
+
+    Explicitly named documents are handled separately and
+    retain higher priority.
+    """
+
+    normalized = normalize_query(
+        query
+    )
+
+    if not contains_any(
+        normalized,
+        MINING_RIGHT_REQUIREMENT_TERMS,
+    ):
+        return set()
+
+    if not contains_any(
+        normalized,
+        MINING_RIGHT_CONTEXT_TERMS,
+    ):
+        return set()
+
+    available_source_ids = {
+        chunk_source_id(
+            chunk
+        )
+        for chunk in chunks
+        if chunk_source_id(
+            chunk
+        )
+    }
+
+    return (
+        MINING_RIGHT_REQUIREMENT_SOURCE_IDS
+        & available_source_ids
+    )
+
+
+# ---------------------------------------------------------
+# Document precision reranking
+# ---------------------------------------------------------
 
 PRECISION_STOPWORDS = {
     "a",
@@ -685,7 +809,6 @@ PRECISION_STOPWORDS = {
     "with",
 }
 
-
 ANSWER_NUMBER_PATTERN = re.compile(
     r"""
     (?:
@@ -698,7 +821,6 @@ ANSWER_NUMBER_PATTERN = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE,
 )
-
 
 MONTH_YEAR_PATTERN = re.compile(
     r"""
@@ -720,17 +842,8 @@ def document_precision_score(
     result: dict,
 ) -> float:
     """
-    Score a hybrid-search result for query-specific precision.
-
-    This complements RRF by rewarding:
-
-    - informative query-token coverage,
-    - important multi-word phrase matches,
-    - exact month/year matches,
-    - answer-like numeric evidence,
-    - sentences containing both query anchors and numbers.
-
-    It does not replace BM25 or semantic search.
+    Score a hybrid-search result for query-specific
+    precision.
     """
 
     chunk = result.get(
@@ -745,11 +858,8 @@ def document_precision_score(
         or ""
     )
 
-    title = str(
-        chunk.get(
-            "title"
-        )
-        or ""
+    title = chunk_title(
+        chunk
     )
 
     searchable = normalize_query(
@@ -762,7 +872,10 @@ def document_precision_score(
 
     query_tokens = [
         token
-        for token in query_normalized.split()
+        for token in re.findall(
+            r"[a-z0-9]+",
+            query_normalized,
+        )
         if (
             token
             not in PRECISION_STOPWORDS
@@ -771,30 +884,28 @@ def document_precision_score(
     ]
 
     if not query_tokens:
-
         return 0.0
 
     searchable_tokens = set(
-        searchable.split()
+        re.findall(
+            r"[a-z0-9]+",
+            searchable,
+        )
     )
 
-    # -----------------------------------------------------
-    # TOKEN COVERAGE
-    # -----------------------------------------------------
+    unique_query_tokens = set(
+        query_tokens
+    )
 
     matched_tokens = sum(
         token in searchable_tokens
-        for token in set(
-            query_tokens
-        )
+        for token in unique_query_tokens
     )
 
     coverage = (
         matched_tokens
         / len(
-            set(
-                query_tokens
-            )
+            unique_query_tokens
         )
     )
 
@@ -802,10 +913,6 @@ def document_precision_score(
         coverage
         * 2.0
     )
-
-    # -----------------------------------------------------
-    # INFORMATIVE BIGRAMS
-    # -----------------------------------------------------
 
     bigrams = [
         " ".join(
@@ -831,26 +938,19 @@ def document_precision_score(
         * 1.5
     )
 
-    # -----------------------------------------------------
-    # DATE MATCHING
-    # -----------------------------------------------------
-
     date_matches = [
-        match.group(0).casefold()
-        for match in MONTH_YEAR_PATTERN.finditer(
+        match.group(
+            0
+        ).casefold()
+        for match
+        in MONTH_YEAR_PATTERN.finditer(
             query
         )
     ]
 
     for date_text in date_matches:
-
         if date_text in searchable:
-
             score += 2.0
-
-    # -----------------------------------------------------
-    # ANSWER-BEARING SENTENCES
-    # -----------------------------------------------------
 
     sentences = re.split(
         r"(?<=[.!?])\s+|\n+",
@@ -858,7 +958,6 @@ def document_precision_score(
     )
 
     for sentence in sentences:
-
         sentence_normalized = (
             normalize_query(
                 sentence
@@ -892,11 +991,9 @@ def document_precision_score(
             anchor_match
             and date_match
         ):
-
             score += 2.0
 
             if numeric_match:
-
                 score += 4.0
 
     return score
@@ -912,23 +1009,24 @@ def rerank_document_results(
     query-specific precision signals.
     """
 
-    reranked: list[dict] = []
+    reranked: list[
+        dict
+    ] = []
 
     for result in results:
-
-        result = dict(
+        copied_result = dict(
             result
         )
 
-        result[
+        copied_result[
             "precision_score"
         ] = document_precision_score(
             query=query,
-            result=result,
+            result=copied_result,
         )
 
         reranked.append(
-            result
+            copied_result
         )
 
     reranked.sort(
@@ -948,6 +1046,8 @@ def rerank_document_results(
     return reranked[
         :top_k
     ]
+
+
 # ---------------------------------------------------------
 # Document search
 # ---------------------------------------------------------
@@ -963,13 +1063,11 @@ def search_documents(
     """
 
     if top_k <= 0:
-
         raise ValueError(
             "top_k must be greater than zero."
         )
 
     if candidate_k <= 0:
-
         raise ValueError(
             "candidate_k must be greater than zero."
         )
@@ -978,12 +1076,13 @@ def search_documents(
         "Loading MineLens document chunks..."
     )
 
-    chunks = load_chunks(
+    all_chunks = load_chunks(
         include_superseded=(
             include_superseded
         ),
     )
-    all_chunks = chunks
+
+    chunks = all_chunks
 
     explicit_source_ids = (
         explicit_document_source_ids(
@@ -992,28 +1091,78 @@ def search_documents(
         )
     )
 
-    if explicit_source_ids:
+    preferred_source_ids: set[
+        str
+    ] = set()
 
-        chunks = [
+    # Explicit document naming always has highest document
+    # source-selection priority.
+    if explicit_source_ids:
+        explicit_chunks = [
             chunk
             for chunk in all_chunks
-            if chunk.get(
-                "source_id"
+            if (
+                chunk_source_id(
+                    chunk
+                )
+                in explicit_source_ids
             )
-            in explicit_source_ids
         ]
 
-        print(
-            "Explicit document source detected: "
-            + ", ".join(
-                sorted(
-                    explicit_source_ids
+        if explicit_chunks:
+            chunks = explicit_chunks
+
+            print(
+                "Explicit document source detected: "
+                + ", ".join(
+                    sorted(
+                        explicit_source_ids
+                    )
                 )
             )
+
+    else:
+        preferred_source_ids = (
+            preferred_document_source_ids(
+                query=query,
+                chunks=all_chunks,
+            )
         )
+
+        if preferred_source_ids:
+            preferred_chunks = [
+                chunk
+                for chunk in all_chunks
+                if (
+                    chunk_source_id(
+                        chunk
+                    )
+                    in preferred_source_ids
+                )
+            ]
+
+            if preferred_chunks:
+                chunks = preferred_chunks
+
+                print(
+                    "Intent-specific document "
+                    "sources detected: "
+                    + ", ".join(
+                        sorted(
+                            preferred_source_ids
+                        )
+                    )
+                )
+
+    if not chunks:
+        raise ValueError(
+            "Document source filtering produced "
+            "an empty search corpus."
+        )
+
     print(
         f"Loaded {len(chunks)} "
-        f"document chunks."
+        "document chunks."
     )
 
     print(
@@ -1024,24 +1173,38 @@ def search_documents(
         chunks
     )
 
-    cache_variant = (
+    base_cache_variant = (
         "include-superseded"
         if include_superseded
         else "current"
     )
 
     if explicit_source_ids:
-
-        source_suffix = "_".join(
-            sorted(
-                explicit_source_ids
+        cache_variant = (
+            base_cache_variant
+            + "-source-"
+            + "-".join(
+                sorted(
+                    explicit_source_ids
+                )
             )
         )
 
+    elif preferred_source_ids:
         cache_variant = (
-            f"{cache_variant}"
-            f"-source-{source_suffix}"
-        )    
+            base_cache_variant
+            + "-intent-source-"
+            + "-".join(
+                sorted(
+                    preferred_source_ids
+                )
+            )
+        )
+
+    else:
+        cache_variant = (
+            base_cache_variant
+        )
 
     semantic_index = SemanticIndex(
         chunks,
@@ -1053,16 +1216,12 @@ def search_documents(
     if not load_embedding_cache(
         semantic_index
     ):
-
         semantic_index.build()
 
         save_embedding_cache(
             semantic_index
         )
 
-    # Retrieve a larger shortlist first so the precision
-    # reranker can recover answer-bearing chunks that may sit
-    # below the initial RRF cutoff.
     rerank_k = max(
         top_k,
         min(
@@ -1070,7 +1229,6 @@ def search_documents(
             60,
         ),
     )
-
 
     results = hybrid_search(
         query=query,
@@ -1080,35 +1238,32 @@ def search_documents(
         candidate_k=candidate_k,
     )
 
-
     results = rerank_document_results(
         query=query,
         results=results,
         top_k=top_k,
     )
+
     results = expand_document_results(
         query=query,
         results=results,
         corpus=chunks,
     )
-    return {
-        "route": (
-            ROUTE_DOCUMENTS
-        ),
-        "results": results,
 
-        # Full searchable document corpus size.
+    return {
+        "route": ROUTE_DOCUMENTS,
+        "results": results,
         "chunk_count": len(
             all_chunks
         ),
-
-        # Useful for debugging / frontend transparency.
         "searched_chunk_count": len(
             chunks
         ),
-
         "explicit_source_ids": sorted(
             explicit_source_ids
+        ),
+        "preferred_source_ids": sorted(
+            preferred_source_ids
         ),
     }
 
@@ -1126,7 +1281,6 @@ def search_licensing(
     """
 
     if top_k <= 0:
-
         raise ValueError(
             "top_k must be greater than zero."
         )
@@ -1150,15 +1304,14 @@ def search_licensing(
     )
 
     return {
-        "route": (
-            ROUTE_LICENSING
-        ),
+        "route": ROUTE_LICENSING,
         "results": results,
         "filters": filters,
         "record_count": len(
             records
         ),
     }
+
 
 # ---------------------------------------------------------
 # Mining statistics search
@@ -1173,22 +1326,18 @@ def search_mining_statistics(
     """
 
     if top_k <= 0:
-
         raise ValueError(
             "top_k must be greater than zero."
         )
-
 
     records = (
         load_mining_statistics()
     )
 
-
     print(
         f"Loaded {len(records):,} "
         "mining statistics records."
     )
-
 
     result = (
         query_mining_statistics(
@@ -1197,17 +1346,13 @@ def search_mining_statistics(
         )
     )
 
-
-    results = (
-        result.get(
-            "results",
-            []
-        )
+    results = result.get(
+        "results",
+        [],
     )
 
-
-    # Only limit ranking-style result sets.
-    # Trend series should retain the full requested period.
+    # Ranking lists can be long. Trend series must retain
+    # the complete requested time period.
     if (
         result.get(
             "intent"
@@ -1217,51 +1362,48 @@ def search_mining_statistics(
             "countries"
         )
     ):
-
         results = results[
             :top_k
         ]
 
-
     return {
-        "route":
-            ROUTE_MINING_STATISTICS,
-
-        "results":
-            results,
-
-        "statistics_intent":
+        "route": (
+            ROUTE_MINING_STATISTICS
+        ),
+        "results": results,
+        "statistics_intent": (
             result.get(
                 "intent"
-            ),
-
-        "commodity":
+            )
+        ),
+        "commodity": (
             result.get(
                 "commodity"
-            ),
-
-        "countries":
+            )
+        ),
+        "countries": (
             result.get(
                 "countries",
                 [],
-            ),
-
-        "years":
+            )
+        ),
+        "years": (
             result.get(
                 "years",
                 [],
-            ),
-
-        "error":
+            )
+        ),
+        "error": (
             result.get(
                 "error"
-            ),
-
-        "record_count":
-            len(
-                records
-            ),
+            )
+        ),
+        "record_count": len(
+            records
+        ),
     }
+
+
 # ---------------------------------------------------------
 # Unified MineLens search
 # ---------------------------------------------------------
@@ -1277,28 +1419,25 @@ def search_mine(
     Unified MineLens entry point.
 
     The query is routed automatically unless force_route
-    explicitly selects "documents" or "licensing".
+    explicitly selects documents, licensing or structured
+    mining statistics.
     """
 
     if not query.strip():
-
         raise ValueError(
             "Query must not be empty."
         )
 
     if force_route is None:
-
         route_info = route_query(
             query
         )
 
     else:
-
         if (
             force_route
             not in VALID_ROUTES
         ):
-
             raise ValueError(
                 "force_route must be "
                 "'documents', 'licensing' "
@@ -1322,18 +1461,15 @@ def search_mine(
         selected_route
         == ROUTE_LICENSING
     ):
-
         payload = search_licensing(
             query=query,
             top_k=top_k,
         )
 
-
     elif (
         selected_route
         == ROUTE_MINING_STATISTICS
     ):
-
         payload = (
             search_mining_statistics(
                 query=query,
@@ -1341,9 +1477,7 @@ def search_mine(
             )
         )
 
-
     else:
-
         payload = search_documents(
             query=query,
             top_k=top_k,

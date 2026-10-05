@@ -1582,7 +1582,384 @@ def generate_fee_answer(
         ),
     }
 
+# ---------------------------------------------------------
+# Deterministic large-scale mining requirements
+# ---------------------------------------------------------
 
+LARGE_SCALE_MINING_REQUIREMENTS = (
+    (
+        (
+            "A duly completed Form I with geographical "
+            "coordinates of the area of interest that fit "
+            "the predefined cadastral grid"
+        ),
+        (
+            (
+                "duly completed form i",
+            ),
+            (
+                "geographical coordinates",
+            ),
+        ),
+    ),
+    (
+        (
+            "A comprehensive statement of the mineral "
+            "deposits in the area, including known "
+            "minerals, proved, estimated or inferred "
+            "resources, ore resources and mining "
+            "conditions"
+        ),
+        (
+            (
+                "comprehensive statement",
+                "compressive statement",
+            ),
+            (
+                "mineral deposit",
+                "mineral deposits",
+            ),
+        ),
+    ),
+    (
+        (
+            "A feasibility study for mining operations, "
+            "including forecast capital investment, "
+            "estimated recovery rates, and the proposed "
+            "treatment and disposal of ore and minerals"
+        ),
+        (
+            (
+                "feasibility study",
+                "feasibilitystudy",
+            ),
+            (
+                "capital investment",
+            ),
+            (
+                "recovery rate",
+            ),
+        ),
+    ),
+    (
+        "A description of the mineral deposit",
+        (
+            (
+                "description of the mineral deposit",
+            ),
+        ),
+    ),
+    (
+        (
+            "A statement of the duration for which the "
+            "licence is sought, which should not exceed "
+            "10 years"
+        ),
+        (
+            (
+                "statement of duration",
+            ),
+            (
+                "10 years",
+            ),
+        ),
+    ),
+    (
+        (
+            "A valid tax clearance certificate issued "
+            "under the Income Tax Act, Cap. 323"
+        ),
+        (
+            (
+                "valid tax clearance certificate",
+            ),
+        ),
+    ),
+    (
+        (
+            "An approved Environmental Project Brief "
+            "(EBP from ZEMA)"
+        ),
+        (
+            (
+                "approved environmental project brief",
+            ),
+        ),
+    ),
+    (
+        (
+            "Proposals for employment and training of "
+            "citizens of Zambia"
+        ),
+        (
+            (
+                "proposals for employment and training",
+            ),
+        ),
+    ),
+    (
+        (
+            "Proposals for promotion of local business "
+            "development"
+        ),
+        (
+            (
+                "proposals for promotion of local "
+                "business development",
+            ),
+        ),
+    ),
+    (
+        "A Pegging Certificate",
+        (
+            (
+                "pegging certificate",
+            ),
+        ),
+    ),
+)
+
+
+def is_large_scale_mining_requirements_query(
+    question: str,
+) -> bool:
+    """
+    Detect questions specifically asking for requirements
+    for a large-scale mining licence.
+    """
+
+    query = normalized_query(
+        question
+    )
+
+
+    requirement_terms = (
+        "requirement",
+        "requirements",
+        "required",
+        "what information",
+        "need to provide",
+        "must provide",
+        "how to apply",
+    )
+
+
+    large_scale_terms = (
+        "large-scale mining",
+        "large scale mining",
+    )
+
+
+    licence_terms = (
+        "licence",
+        "license",
+        "mining right",
+    )
+
+
+    return (
+        any(
+            term in query
+            for term in requirement_terms
+        )
+        and any(
+            term in query
+            for term in large_scale_terms
+        )
+        and any(
+            term in query
+            for term in licence_terms
+        )
+    )
+
+
+def evidence_source_for_groups(
+    evidence: list[dict],
+    phrase_groups: tuple[
+        tuple[str, ...],
+        ...,
+    ],
+) -> str | None:
+    """
+    Return the first evidence source containing at least
+    one phrase from every required phrase group.
+    """
+
+    for item in evidence:
+
+        text = clean_text(
+            item.get(
+                "text"
+            )
+        ).casefold()
+
+
+        if not text:
+            continue
+
+
+        matches_all_groups = all(
+            any(
+                phrase.casefold()
+                in text
+                for phrase in group
+            )
+            for group in phrase_groups
+        )
+
+
+        if not matches_all_groups:
+            continue
+
+
+        source_id = clean_text(
+            item.get(
+                "source_id"
+            )
+        )
+
+
+        if source_id:
+            return source_id
+
+
+    return None
+
+
+def generate_large_scale_mining_requirements_answer(
+    question: str,
+    evidence: list[dict],
+) -> dict | None:
+    """
+    Generate a deterministic large-scale mining licence
+    requirements answer from retrieved official evidence.
+    """
+
+    if not (
+        is_large_scale_mining_requirements_query(
+            question
+        )
+    ):
+
+        return None
+
+
+    requirement_lines: list[
+        str
+    ] = []
+
+    citations: list[
+        str
+    ] = []
+
+
+    for (
+        requirement,
+        phrase_groups,
+    ) in LARGE_SCALE_MINING_REQUIREMENTS:
+
+        source_id = (
+            evidence_source_for_groups(
+                evidence=evidence,
+                phrase_groups=(
+                    phrase_groups
+                ),
+            )
+        )
+
+
+        if source_id is None:
+            continue
+
+
+        requirement_lines.append(
+            f"- {requirement}. "
+            f"[{source_id}]"
+        )
+
+
+        if source_id not in citations:
+
+            citations.append(
+                source_id
+            )
+
+
+    # Require substantial supporting evidence before
+    # using the deterministic answer.
+    if len(
+        requirement_lines
+    ) < 5:
+
+        return None
+
+
+    company_source = (
+        evidence_source_for_groups(
+            evidence=evidence,
+            phrase_groups=(
+                (
+                    (
+                        "shall only be made "
+                        "by a company"
+                    ),
+                ),
+            ),
+        )
+    )
+
+
+    answer_parts = [
+        (
+            "The retrieved official sources list the "
+            "following requirements for a large-scale "
+            "mining licence:"
+        ),
+        "\n".join(
+            requirement_lines
+        ),
+    ]
+
+
+    if company_source:
+
+        answer_parts.append(
+            (
+                "The application form also notes that "
+                "an application for large-scale or "
+                "small-scale mining shall only be made "
+                "by a company. "
+                f"[{company_source}]"
+            )
+        )
+
+
+        if (
+            company_source
+            not in citations
+        ):
+
+            citations.append(
+                company_source
+            )
+
+
+    return {
+        "answer": "\n\n".join(
+            answer_parts
+        ),
+        "model": None,
+        "generation_method": (
+            "deterministic-mining-requirements"
+        ),
+        "citations": citations,
+        "sources": (
+            filter_sources_by_citations(
+                evidence=evidence,
+                citations=citations,
+            )
+        ),
+    }
 # ---------------------------------------------------------
 # Ollama generation
 # ---------------------------------------------------------
@@ -2250,6 +2627,17 @@ def answer_from_evidence(
     if fee_answer is not None:
 
         return fee_answer
+    requirements_answer = (
+        generate_large_scale_mining_requirements_answer(
+            question=question,
+            evidence=evidence,
+        )
+    )
+
+
+    if requirements_answer is not None:
+
+        return requirements_answer
     critical_minerals_answer = (
         generate_critical_minerals_answer(
             question=question,

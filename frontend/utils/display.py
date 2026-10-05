@@ -36,18 +36,31 @@ def clean_text(value: Any) -> str:
     )
 
 
-def route_label(route: str) -> str:
+def route_label(
+    route: str,
+) -> str:
     """
     Convert internal route names into readable labels.
     """
 
-    if route == "licensing":
-        return "Licensing"
+    labels = {
+        "licensing":
+            "Licensing",
 
-    if route == "documents":
-        return "Documents"
+        "documents":
+            "Documents",
 
-    return clean_text(route)
+        "mining_statistics":
+            "Mining Statistics",
+    }
+
+
+    return labels.get(
+        route,
+        clean_text(
+            route
+        ),
+    )
 
 
 def generation_label(
@@ -59,12 +72,28 @@ def generation_label(
     """
 
     labels = {
-        "deterministic-fee": "Fee extraction",
-        "deterministic-licensing": "Structured licence",
-        "deterministic-critical-minerals": "Mineral extraction",
-        "ollama": "Grounded local LLM",
-        "no-evidence": "No evidence",
-        "error": "Generation error",
+        "deterministic-fee":
+            "Fee extraction",
+
+        "deterministic-licensing":
+            "Structured licence",
+
+        "deterministic-critical-minerals":
+            "Mineral extraction",
+
+        "ollama":
+            "Grounded local LLM",
+
+        "no-evidence":
+            "No evidence",
+
+        "error":
+            "Generation error",
+
+        "structured-statistics":
+            "Structured statistics",
+        "deterministic-mining-requirements":
+            "Requirements extraction",
     }
 
     if not generation_method:
