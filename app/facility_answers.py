@@ -237,44 +237,27 @@ def facility_source(
     Build one frontend-compatible source record.
     """
 
-    urls = facility.get(
-        "sources",
-        [],
-    )
-
-
-    source_url = (
-        urls[0]
-        if urls
-        else None
-    )
-
-
     return {
-        "source_id":
-            source_id,
-
-        "title":
-            (
-                "USGS Minerals Yearbook 2024 "
-                "— Zambia Facilities"
-            ),
-
-        "document":
-            (
-                "2024MYBv3_Facilities_table.csv"
-            ),
-
-        "pages":
-            None,
-
-        "source_url":
-            source_url,
-
-        "agency":
-            "U.S. Geological Survey",
+        "source_id": source_id,
+        "title": (
+            "USGS Minerals Yearbook 2024 "
+            "— Zambia Facilities"
+        ),
+        "document": (
+            "2024MYBv3_Facilities_table.csv"
+        ),
+        "pages": None,
+        "source_url": (
+            "https://doi.org/10.5066/P1KEQASH"
+        ),
+        "agency": (
+            "U.S. Geological Survey"
+        ),
+        "supporting_urls": facility.get(
+            "sources",
+            [],
+        ),
     }
-
 
 # =========================================================
 # FACILITY FORMATTING

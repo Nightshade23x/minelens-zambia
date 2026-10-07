@@ -23,10 +23,13 @@ from app.rag import (
 from app.router import (
     ROUTE_DOCUMENTS,
     ROUTE_LICENSING,
+    ROUTE_FACILITIES,
     route_query,
     search_mine,
 )
-
+from app.facility_answers import (
+    answer_facility_result,
+)
 
 # ---------------------------------------------------------
 # Configuration
@@ -137,6 +140,7 @@ def main() -> None:
             "auto",
             ROUTE_DOCUMENTS,
             ROUTE_LICENSING,
+            ROUTE_FACILITIES,
         ],
         default="auto",
     )
@@ -259,7 +263,6 @@ def main() -> None:
             ]
             == ROUTE_LICENSING
         ):
-
             display_licensing_results(
                 query=query,
                 results=result[
@@ -270,8 +273,52 @@ def main() -> None:
                 ],
             )
 
-        else:
+        elif (
+            result[
+                "route"
+            ]
+            == ROUTE_FACILITIES
+        ):
+            print(
+                "Structured facility results:"
+            )
 
+            print()
+
+            for index, item in enumerate(
+                result.get(
+                    "results",
+                    [],
+                ),
+                start=1,
+            ):
+                facility = item[
+                    "facility"
+                ]
+
+                print(
+                    f"{index}. "
+                    f"{facility.get('facility_name')}"
+                )
+
+                print(
+                    f"   USGS ID: "
+                    f"{facility.get('facility_id')}"
+                )
+
+                print(
+                    f"   Province: "
+                    f"{facility.get('province')}"
+                )
+
+                print(
+                    f"   Commodities: "
+                    f"{', '.join(facility.get('commodities', []))}"
+                )
+
+                print()
+
+        else:
             display_hybrid_results(
                 query=query,
                 results=result[
@@ -281,33 +328,69 @@ def main() -> None:
 
         return
 
+        
+
     # -----------------------------------------------------
     # Evidence normalization
     # -----------------------------------------------------
 
-    evidence = normalize_evidence(
-        search_result=result,
-        max_evidence=(
+    if (
+        result[
+            "route"
+        ]
+        == ROUTE_FACILITIES
+    ):
+        evidence = []
+
+    else:
+        effective_evidence_k = (
             args.evidence_k
-        ),
-    )
+        )
+
+        if result.get(
+            "preferred_source_ids"
+        ):
+            effective_evidence_k = max(
+                effective_evidence_k,
+                5,
+            )
+
+        evidence = normalize_evidence(
+            search_result=result,
+            max_evidence=(
+                effective_evidence_k
+            ),
+        )
 
     # -----------------------------------------------------
     # Grounded answer generation
     # -----------------------------------------------------
 
-    rag_result = (
-        answer_from_evidence(
-            question=query,
-            evidence=evidence,
-            model=args.model,
+    if (
+        result[
+            "route"
+        ]
+        == ROUTE_FACILITIES
+    ):
+        answer_result = (
+            answer_facility_result(
+                query=query,
+                search_result=result,
+            )
         )
-    )
+
+    else:
+        answer_result = (
+            answer_from_evidence(
+                question=query,
+                evidence=evidence,
+                model=args.model,
+            )
+        )
 
     display_answer(
-        rag_result
-    )
-
+        answer_result
+    )    
 
 if __name__ == "__main__":
     main()

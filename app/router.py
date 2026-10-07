@@ -29,7 +29,10 @@ from app.search import (
     BM25Index,
     load_chunks,
 )
-
+from app.facility_search import (
+    load_facilities,
+    search_facilities as search_facility_records,
+)
 
 # ---------------------------------------------------------
 # Routes
@@ -38,11 +41,13 @@ from app.search import (
 ROUTE_DOCUMENTS = "documents"
 ROUTE_LICENSING = "licensing"
 ROUTE_MINING_STATISTICS = "mining_statistics"
+ROUTE_FACILITIES = "facilities"
 
 VALID_ROUTES = {
     ROUTE_DOCUMENTS,
     ROUTE_LICENSING,
     ROUTE_MINING_STATISTICS,
+    ROUTE_FACILITIES,
 }
 
 
@@ -126,6 +131,60 @@ LOCATION_PREPOSITIONS = (
     "around",
     "near",
 )
+FACILITY_ENTITY_TERMS = (
+    "mine",
+    "mines",
+    "plant",
+    "plants",
+    "refinery",
+    "refineries",
+    "smelter",
+    "smelters",
+    "facility",
+    "facilities",
+    "quarry",
+    "quarries",
+)
+
+FACILITY_ATTRIBUTE_TERMS = (
+    "who operates",
+    "who operate",
+    "operated by",
+    "operator",
+    "operating company",
+    "who owns",
+    "owner",
+    "owners",
+    "ownership",
+    "equity",
+    "shareholder",
+    "shareholders",
+    "capacity",
+    "production capacity",
+    "annual capacity",
+    "where is",
+    "where are",
+    "located",
+    "location",
+    "active",
+    "inactive",
+    "operational",
+)
+
+FACILITY_GENERIC_NAME_TERMS = {
+    "mine",
+    "mines",
+    "plant",
+    "plants",
+    "refinery",
+    "refineries",
+    "smelter",
+    "smelters",
+    "facility",
+    "facilities",
+    "quarry",
+    "quarries",
+}
 
 MINING_RIGHT_REQUIREMENT_TERMS = (
     "requirement",
@@ -469,7 +528,149 @@ def has_location_style_constraint(
         in LOCATION_PREPOSITIONS
     )
 
+def named_facility_match(
+    query: str,
+    facilities: list[dict],
+) -> bool:
+    """
+    Detect a named USGS facility in the query.
 
+    Generic words such as 'mine' and 'plant' are removed
+    before matching so queries like 'Kansanshi capacity'
+    can still identify Kansanshi Mine.
+    """
+
+    query_tokens = set(
+        re.findall(
+            r"[a-z0-9]+",
+            normalize_query(
+                query
+            ),
+        )
+    )
+
+    if not query_tokens:
+        return False
+
+
+    for facility in facilities:
+
+        name = normalize_query(
+            str(
+                facility.get(
+                    "facility_name"
+                )
+                or ""
+            )
+        )
+
+        if not name:
+            continue
+
+
+        name_tokens = {
+            token
+            for token in re.findall(
+                r"[a-z0-9]+",
+                name,
+            )
+            if token
+            not in FACILITY_GENERIC_NAME_TERMS
+        }
+
+
+        if (
+            name_tokens
+            and name_tokens.issubset(
+                query_tokens
+            )
+        ):
+            return True
+
+
+    return False
+
+
+def has_facility_intent(
+    query: str,
+    facilities: list[dict],
+) -> bool:
+    """
+    Detect clear structured mine/facility queries.
+
+    This is deliberately conservative so general mining
+    questions remain in document retrieval.
+    """
+
+    normalized = normalize_query(
+        query
+    )
+
+
+    has_entity_term = contains_any(
+        normalized,
+        FACILITY_ENTITY_TERMS,
+    )
+
+
+    has_attribute_term = contains_any(
+        normalized,
+        FACILITY_ATTRIBUTE_TERMS,
+    )
+
+
+    has_named_facility = (
+        named_facility_match(
+            query=query,
+            facilities=facilities,
+        )
+    )
+
+
+    # A named facility plus a structured attribute is a
+    # strong signal:
+    #
+    #   Who operates Sentinel Mine?
+    #   Who owns Kansanshi?
+    #   Kansanshi capacity
+    #   Where is Lumwana located?
+    if (
+        has_named_facility
+        and has_attribute_term
+    ):
+        return True
+
+
+    # Explicit facility language plus a structured
+    # attribute:
+    #
+    #   active copper mines
+    #   inactive smelters
+    #   refinery capacity
+    if (
+        has_entity_term
+        and has_attribute_term
+    ):
+        return True
+
+
+    # Listing/filtering language with an explicit facility
+    # entity:
+    #
+    #   show copper mines
+    #   list smelters
+    #   which refineries
+    if (
+        has_entity_term
+        and contains_any(
+            normalized,
+            LISTING_WORDS,
+        )
+    ):
+        return True
+
+
+    return False
 # ---------------------------------------------------------
 # Routing
 # ---------------------------------------------------------
@@ -537,7 +738,42 @@ def route_query(
                 "ranking or trend statistics."
             ),
         }
+    # Structured mine/facility intelligence.
+    #
+    # This is checked before general document intent
+    # because facility questions may contain words such
+    # as "production" or "capacity".
+    #
+    # Explicit mining-licensing language is excluded so:
+    #
+    #   "approved copper licences in Solwezi"
+    #
+    # remains a licensing query.
+    try:
+        facilities = (
+            load_facilities()
+        )
+    except FileNotFoundError:
+        facilities = []
 
+
+    if (
+        facilities
+        and not licensing_context
+        and has_facility_intent(
+            query=query,
+            facilities=facilities,
+        )
+    ):
+        return {
+            "route": ROUTE_FACILITIES,
+            "reason": (
+                "The query asks about a structured "
+                "mine or mineral facility, such as "
+                "its operator, ownership, location, "
+                "status or production capacity."
+            ),
+        }
     # Strong documentary intent.
     if contains_any(
         normalized,
@@ -1403,7 +1639,70 @@ def search_mining_statistics(
         ),
     }
 
+# ---------------------------------------------------------
+# Facility search
+# ---------------------------------------------------------
 
+def search_facilities(
+    query: str,
+    top_k: int = 5,
+) -> dict:
+    """
+    Run structured USGS Zambia facility search.
+    """
+
+    if top_k <= 0:
+        raise ValueError(
+            "top_k must be greater than zero."
+        )
+
+    facilities = (
+        load_facilities()
+    )
+
+    print(
+        f"Loaded {len(facilities):,} "
+        "USGS facility records."
+    )
+
+    result = (
+        search_facility_records(
+            query=query,
+            facilities=facilities,
+            top_k=top_k,
+        )
+    )
+
+    return {
+        "route":
+            ROUTE_FACILITIES,
+
+        "results":
+            result.get(
+                "results",
+                [],
+            ),
+
+        "filters":
+            result.get(
+                "filters",
+                {},
+            ),
+
+        "facility_count":
+            result.get(
+                "facility_count",
+                len(
+                    facilities
+                ),
+            ),
+
+        "match_count":
+            result.get(
+                "match_count",
+                0,
+            ),
+    }
 # ---------------------------------------------------------
 # Unified MineLens search
 # ---------------------------------------------------------
@@ -1419,8 +1718,8 @@ def search_mine(
     Unified MineLens entry point.
 
     The query is routed automatically unless force_route
-    explicitly selects documents, licensing or structured
-    mining statistics.
+    explicitly selects documents, licensing, structured
+    mining statistics or facilities.
     """
 
     if not query.strip():
@@ -1440,8 +1739,9 @@ def search_mine(
         ):
             raise ValueError(
                 "force_route must be "
-                "'documents', 'licensing' "
-                "or 'mining_statistics'."
+                "'documents', 'licensing', "
+                "'mining_statistics' or "
+                "'facilities'."
             )
 
         route_info = {
@@ -1456,7 +1756,6 @@ def search_mine(
             "route"
         ]
     )
-
     if (
         selected_route
         == ROUTE_LICENSING
@@ -1472,6 +1771,17 @@ def search_mine(
     ):
         payload = (
             search_mining_statistics(
+                query=query,
+                top_k=top_k,
+            )
+        )
+
+    elif (
+        selected_route
+        == ROUTE_FACILITIES
+    ):
+        payload = (
+            search_facilities(
                 query=query,
                 top_k=top_k,
             )
@@ -1498,3 +1808,4 @@ def search_mine(
     ]
 
     return payload
+        
