@@ -131,7 +131,9 @@ from frontend.components.statistics import (
     display_statistics_results,
 
 )
-
+from frontend.components.facilities import (
+    display_facility_results,
+)
 # =========================================================
 
 # PAGE CONFIGURATION
@@ -1222,6 +1224,34 @@ if submitted:
             ),
         }
 
+    elif route_choice == "Mining Statistics":
+
+        force_route = (
+            ROUTE_MINING_STATISTICS
+        )
+
+        route_info = {
+            "route": ROUTE_MINING_STATISTICS,
+            "reason": (
+                "Mining statistics search "
+                "selected manually."
+            ),
+        }
+
+    elif route_choice == "Facilities":
+
+        force_route = (
+            ROUTE_FACILITIES
+        )
+
+        route_info = {
+            "route": ROUTE_FACILITIES,
+            "reason": (
+                "Facility intelligence search "
+                "selected manually."
+            ),
+        }
+
     else:
 
         force_route = None
@@ -1624,6 +1654,20 @@ if result_state:
             search_result
         )
 
+    # =====================================================
+    # FACILITIES
+    # =====================================================
+
+    if (
+        route_info.get(
+            "route"
+        )
+        == ROUTE_FACILITIES
+    ):
+
+        display_facility_results(
+            search_result
+        )
     # =====================================================
     # LICENSING RECORDS
     # =====================================================

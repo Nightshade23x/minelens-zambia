@@ -67,7 +67,8 @@ def render_sidebar() -> dict:
             index=0,
             help=(
                 "Auto uses MineLens' preferred "
-                "local Ollama model."
+                "local Ollama model when a language "
+                "model is required."
             ),
         )
 
@@ -77,12 +78,15 @@ def render_sidebar() -> dict:
                 "Auto",
                 "Documents",
                 "Licensing",
+                "Mining Statistics",
+                "Facilities",
             ],
             index=0,
             help=(
-                "Auto lets MineLens decide "
-                "whether to search documents "
-                "or structured licensing data."
+                "Auto lets MineLens choose between "
+                "documents, licensing records, "
+                "mining statistics and facility "
+                "intelligence."
             ),
         )
 
