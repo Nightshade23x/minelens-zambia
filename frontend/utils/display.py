@@ -52,6 +52,9 @@ def route_label(
 
         "mining_statistics":
             "Mining Statistics",
+
+        "facilities":
+            "Facilities",
     }
 
 
@@ -94,6 +97,8 @@ def generation_label(
             "Structured statistics",
         "deterministic-mining-requirements":
             "Requirements extraction",
+        "structured-facilities":
+            "Facility intelligence",
     }
 
     if not generation_method:

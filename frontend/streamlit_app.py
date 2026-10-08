@@ -64,6 +64,7 @@ from frontend.components.documents import (
 
 )
 
+
 # =========================================================
 
 # PROJECT PATH
@@ -99,7 +100,9 @@ if str(ROOT_DIR) not in sys.path:
 
 
 from app.evidence import normalize_evidence  # noqa: E402
-
+from app.facility_answers import (  # noqa: E402
+    answer_facility_result,
+)
 from app.rag import (  # noqa: E402
 
     answer_from_evidence,
@@ -109,17 +112,12 @@ from app.rag import (  # noqa: E402
 )
 
 from app.router import (  # noqa: E402
-
     ROUTE_DOCUMENTS,
-
     ROUTE_LICENSING,
-
     ROUTE_MINING_STATISTICS,
-
+    ROUTE_FACILITIES,
     route_query,
-
     search_mine,
-
 )
 
 from app.mining_statistics import (  # noqa: E402
@@ -1252,12 +1250,17 @@ if submitted:
                 search_result.get(
                     "route"
                 )
-                == ROUTE_MINING_STATISTICS
+                in {
+                    ROUTE_MINING_STATISTICS,
+                    ROUTE_FACILITIES,
+                }
             ):
 
                 evidence = []
 
             else:
+
+           
 
                 effective_evidence_k = (
                     evidence_k
@@ -1290,7 +1293,7 @@ if submitted:
 
             st.stop()
 
-    # -----------------------------------------------------
+        # -----------------------------------------------------
     # Answer generation
     # -----------------------------------------------------
 
@@ -1310,6 +1313,20 @@ if submitted:
                 answer_result = (
                     answer_statistics_result(
                         search_result
+                    )
+                )
+
+            elif (
+                search_result.get(
+                    "route"
+                )
+                == ROUTE_FACILITIES
+            ):
+
+                answer_result = (
+                    answer_facility_result(
+                        query=query,
+                        search_result=search_result,
                     )
                 )
 
@@ -1333,6 +1350,7 @@ if submitted:
                 f"{type(error).__name__}: "
                 f"{error}"
             )
+
 
     # -----------------------------------------------------
     # Persist result
@@ -1414,7 +1432,10 @@ if result_state:
             route_info.get(
                 "route"
             )
-            == ROUTE_MINING_STATISTICS
+            in {
+                ROUTE_MINING_STATISTICS,
+                ROUTE_FACILITIES,
+            }
         ):
 
             frontend_answer = str(
@@ -1507,7 +1528,10 @@ if result_state:
                 route_info.get(
                     "route"
                 )
-                == ROUTE_MINING_STATISTICS
+                in {
+                    ROUTE_MINING_STATISTICS,
+                    ROUTE_FACILITIES,
+                }
             ):
 
                 count_label = (
