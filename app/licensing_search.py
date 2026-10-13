@@ -143,55 +143,119 @@ LICENCE_CODE_PATTERN = re.compile(
 # ---------------------------------------------------------
 
 def load_licensing_records(
-    path: Path = DEFAULT_LICENSING_FILE,
+    path: Path | None = None,
 ) -> list[dict]:
     """
     Load structured licensing committee records.
+
+    If a specific path is supplied, only that file is
+    loaded.
+
+    Otherwise, load every dated MineLens licensing
+    committee batch from the processed-data directory.
+
+    Multiple records for the same licence code are
+    intentionally preserved because a licence/application
+    may appear in more than one committee meeting.
     """
 
-    if not path.exists():
+    if path is not None:
+
+        paths = [
+            path
+        ]
+
+    else:
+
+        processed_dir = (
+            DEFAULT_LICENSING_FILE.parent
+        )
+
+        paths = sorted(
+            processed_dir.glob(
+                (
+                    "zambia_licensing_committee_results_"
+                    "*.licences.jsonl"
+                )
+            )
+        )
+
+    if not paths:
+
         raise FileNotFoundError(
-            "Structured licensing file "
-            f"not found:\n{path}"
+            "No structured licensing files "
+            "were found."
         )
 
     records: list[dict] = []
 
-    with path.open(
-        "r",
-        encoding="utf-8",
-    ) as file:
+    for source_path in paths:
 
-        for line_number, line in enumerate(
-            file,
-            start=1,
-        ):
-
-            if not line.strip():
-                continue
-
-            try:
-
-                record = json.loads(
-                    line
-                )
-
-            except json.JSONDecodeError as error:
-
-                raise ValueError(
-                    "Invalid JSON on line "
-                    f"{line_number} of {path}"
-                ) from error
-
-            records.append(
-                record
+        if not source_path.exists():
+            raise FileNotFoundError(
+                "Structured licensing file "
+                f"not found:\n{source_path}"
             )
 
+        with source_path.open(
+            "r",
+            encoding="utf-8",
+        ) as file:
+
+            for line_number, line in enumerate(
+                file,
+                start=1,
+            ):
+
+                if not line.strip():
+                    continue
+
+                try:
+
+                    record = json.loads(
+                        line
+                    )
+
+                except json.JSONDecodeError as error:
+
+                    raise ValueError(
+                        "Invalid JSON on line "
+                        f"{line_number} of "
+                        f"{source_path}"
+                    ) from error
+
+                record[
+                    "_licensing_batch_file"
+                ] = source_path.name
+
+                records.append(
+                    record
+                )
+
     if not records:
+
         raise ValueError(
-            "Licensing file contains "
+            "Licensing files contain "
             "no records."
         )
+
+    # Latest committee records first.
+    #
+    # effective_date represents the committee meeting
+    # date when available. published_date is used as
+    # fallback for older batches.
+    records.sort(
+        key=lambda record: (
+            record.get(
+                "effective_date"
+            )
+            or record.get(
+                "published_date"
+            )
+            or ""
+        ),
+        reverse=True,
+    )
 
     return records
 
@@ -888,7 +952,112 @@ def records_to_search_chunks(
 
     return chunks
 
+def licensing_event_date(
+    record: dict,
+) -> str:
+    """
+    Return the best sortable date for a licensing event.
 
+    Committee/effective date is preferred. Publication
+    date is the fallback for older batches.
+    """
+
+    return str(
+        record.get(
+            "effective_date"
+        )
+        or record.get(
+            "published_date"
+        )
+        or ""
+    ).strip()
+
+
+def wants_licensing_history(
+    query: str,
+) -> bool:
+    """
+    Detect requests for historical licensing decisions
+    rather than only the latest known state.
+    """
+
+    normalized = " ".join(
+        query.casefold().split()
+    )
+
+    history_terms = (
+        "decision history",
+        "licence history",
+        "license history",
+        "history for",
+        "historical decisions",
+        "previous decision",
+        "previous decisions",
+        "prior decision",
+        "prior decisions",
+        "decision changes",
+        "changed decision",
+        "changed from",
+        "across committee meetings",
+        "over time",
+    )
+
+    return any(
+        term in normalized
+        for term in history_terms
+    )
+
+
+def latest_licensing_records(
+    records: list[dict],
+) -> list[dict]:
+    """
+    Return the latest known event for each licence code.
+
+    Historical records remain available in the original
+    record collection and are used when history is
+    explicitly requested.
+    """
+
+    ordered = sorted(
+        records,
+        key=licensing_event_date,
+        reverse=True,
+    )
+
+    latest: list[dict] = []
+
+    seen_codes: set[str] = set()
+
+    for record in ordered:
+
+        licence_code = str(
+            record.get(
+                "licence_code"
+            )
+            or ""
+        ).strip()
+
+        if not licence_code:
+
+            latest.append(
+                record
+            )
+
+            continue
+
+        if licence_code in seen_codes:
+            continue
+
+        seen_codes.add(
+            licence_code
+        )
+
+        latest.append(
+            record
+        )
+
+    return latest
 # ---------------------------------------------------------
 # Structured search
 # ---------------------------------------------------------
@@ -911,6 +1080,11 @@ def search_licensing_records(
     """
     Search structured licensing records.
 
+    Normal searches use the latest known event for each
+    licence code.
+
+    Explicit history queries retain all committee events.
+
     Query conditions are converted into hard filters
     before BM25 ranking.
 
@@ -920,6 +1094,28 @@ def search_licensing_records(
     if top_k <= 0:
         raise ValueError(
             "top_k must be greater than zero."
+        )
+
+    history_mode = (
+        wants_licensing_history(
+            query
+        )
+    )
+
+    if history_mode:
+
+        searchable_records = sorted(
+            records,
+            key=licensing_event_date,
+            reverse=True,
+        )
+
+    else:
+
+        searchable_records = (
+            latest_licensing_records(
+                records
+            )
         )
 
     inferred_code = (
@@ -945,7 +1141,7 @@ def search_licensing_records(
         inferred_district,
     ) = infer_location(
         query=query,
-        records=records,
+        records=searchable_records,
     )
 
     inferred_commodity = (
@@ -993,11 +1189,20 @@ def search_licensing_records(
         "applicant": (
             applicant
         ),
+        "history": (
+            history_mode
+        ),
+    }
+
+    filter_arguments = {
+        key: value
+        for key, value in filters.items()
+        if key != "history"
     }
 
     filtered = filter_records(
-        records=records,
-        **filters,
+        records=searchable_records,
+        **filter_arguments,
     )
 
     if not filtered:
@@ -1007,17 +1212,41 @@ def search_licensing_records(
             filters,
         )
 
-    chunks = (
-        records_to_search_chunks(
-            filtered
-        )
-    )
-
-    # Exact licence codes are deterministic lookups.
-
+    # Exact-code lookup.
+    #
+    # Normal mode returns only the latest event.
+    # History mode returns all matching committee events.
     if filters[
         "licence_code"
     ]:
+
+        filtered = sorted(
+            filtered,
+            key=licensing_event_date,
+            reverse=True,
+        )
+
+        if history_mode:
+
+            selected_records = (
+                filtered[
+                    :top_k
+                ]
+            )
+
+        else:
+
+            selected_records = (
+                filtered[
+                    :1
+                ]
+            )
+
+        chunks = (
+            records_to_search_chunks(
+                selected_records
+            )
+        )
 
         return (
             [
@@ -1025,12 +1254,16 @@ def search_licensing_records(
                     "score": 1.0,
                     "chunk": chunk,
                 }
-                for chunk in chunks[
-                    :top_k
-                ]
+                for chunk in chunks
             ],
             filters,
         )
+
+    chunks = (
+        records_to_search_chunks(
+            filtered
+        )
+    )
 
     index = BM25Index(
         chunks
@@ -1046,9 +1279,8 @@ def search_licensing_records(
         ),
     )
 
-    # If all useful query terms were already consumed by
-    # hard filters, return the filtered records directly.
-
+    # If all useful query terms were consumed by hard
+    # filters, return filtered records directly.
     if not results:
 
         results = [
@@ -1065,7 +1297,6 @@ def search_licensing_records(
         results,
         filters,
     )
-
 
 # ---------------------------------------------------------
 # Display

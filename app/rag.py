@@ -15,7 +15,9 @@ from app.evidence import (
 from app.context_expansion import (
     is_list_query,
 )
-
+from app.licensing_search import (
+    wants_licensing_history,
+)
 # ---------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------
@@ -1084,16 +1086,376 @@ def licensing_record_summary(
         )
 
     return summary
+def format_licensing_event_date(
+    value: str | None,
+) -> str:
+    """
+    Convert an ISO licensing date into a readable form.
+    """
 
+    text = clean_text(
+        value
+    )
+
+    if not text:
+        return ""
+
+    parts = text.split(
+        "-"
+    )
+
+    if (
+        len(parts) == 3
+        and all(
+            part.isdigit()
+            for part in parts
+        )
+    ):
+
+        year = parts[0]
+        month_number = int(
+            parts[1]
+        )
+        day = int(
+            parts[2]
+        )
+
+        months = (
+            "",
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        )
+
+        if (
+            1
+            <= month_number
+            <= 12
+        ):
+
+            return (
+                f"{day} "
+                f"{months[month_number]} "
+                f"{year}"
+            )
+
+    return text
+
+
+def licensing_event_sort_key(
+    evidence_item: dict,
+) -> str:
+
+    effective_date = clean_text(
+        evidence_item.get(
+            "effective_date"
+        )
+    )
+
+    if effective_date:
+        return effective_date
+
+    published_date = clean_text(
+        evidence_item.get(
+            "published_date"
+        )
+    )
+
+    if published_date:
+        return published_date
+
+    return ""
+
+
+
+def licensing_event_label(
+    evidence_item: dict,
+) -> str:
+
+    effective_date = (
+        format_licensing_event_date(
+            evidence_item.get(
+                "effective_date"
+            )
+        )
+    )
+
+    if effective_date:
+        return effective_date
+
+    document = clean_text(
+        evidence_item.get(
+            "document"
+        )
+    ).casefold()
+
+    if (
+        "june" in document
+        and "2026" in document
+    ):
+        return (
+            "June 2026 committee batch"
+        )
+
+    if (
+        "september" in document
+        and "2026" in document
+    ):
+        return (
+            "September 2026 committee batch"
+        )
+
+    published_date = (
+        format_licensing_event_date(
+            evidence_item.get(
+                "published_date"
+            )
+        )
+    )
+
+    if published_date:
+        return (
+            f"Published {published_date}"
+        )
+
+    return "Committee record"
+
+
+def generate_licensing_history_answer(
+    evidence: list[dict],
+) -> dict:
+    """
+    Generate a chronological licensing-decision timeline.
+    """
+
+    if not evidence:
+
+        return {
+            "answer": (
+                "No matching licensing "
+                "history was retrieved."
+            ),
+            "model": None,
+            "generation_method": (
+                "deterministic-licensing-history"
+            ),
+            "citations": [],
+            "sources": [],
+        }
+
+    ordered = sorted(
+        evidence,
+        key=licensing_event_sort_key,
+    )
+
+    latest_item = ordered[
+        -1
+    ]
+
+    latest_record = (
+        latest_item.get(
+            "record",
+            {},
+        )
+    )
+
+    licence_code = clean_text(
+        latest_record.get(
+            "licence_code"
+        )
+    )
+
+    applicant = clean_text(
+        latest_record.get(
+            "applicant"
+        )
+    )
+
+    latest_decision = clean_text(
+        latest_record.get(
+            "decision"
+        )
+    )
+
+    lines: list[str] = []
+
+    heading = (
+        f"Decision history for "
+        f"{licence_code}"
+        if licence_code
+        else "Licensing decision history"
+    )
+
+    if applicant:
+
+        heading += (
+            f" ({applicant})"
+        )
+
+    lines.append(
+        heading + ":"
+    )
+
+    decisions: list[str] = []
+
+    for item in ordered:
+
+        record = item.get(
+            "record",
+            {},
+        )
+
+        decision = clean_text(
+            record.get(
+                "decision"
+            )
+        )
+
+        if decision:
+            decisions.append(
+                decision
+            )
+
+        event_label = (
+            licensing_event_label(
+                item
+            )
+        )
+
+        deadline = clean_text(
+            record.get(
+                "deadline"
+            )
+        )
+
+        citation = clean_text(
+            item.get(
+                "source_id"
+            )
+        )
+
+        line = (
+            f"- {event_label}: "
+            f"{decision or 'Decision not recorded'}"
+        )
+
+        if deadline:
+
+            line += (
+                ". Window/timeframe: "
+                f"{deadline}"
+            )
+
+        if citation:
+
+            line += (
+                f". [{citation}]"
+            )
+
+        lines.append(
+            line
+        )
+
+    if (
+        len(decisions) >= 2
+        and decisions[0]
+        != decisions[-1]
+    ):
+
+        lines.append(
+            ""
+        )
+
+        lines.append(
+            "Decision changed from "
+            f"{decisions[0]} "
+            f"to {decisions[-1]}."
+        )
+
+    latest_citation = clean_text(
+        latest_item.get(
+            "source_id"
+        )
+    )
+
+    latest_line = (
+        f"Latest decision: "
+        f"{latest_decision or 'Not recorded'}."
+    )
+
+    if latest_citation:
+
+        latest_line += (
+            f" [{latest_citation}]"
+        )
+
+    lines.append(
+        latest_line
+    )
+
+    citations: list[str] = []
+
+    for item in evidence:
+
+        citation = clean_text(
+            item.get(
+                "source_id"
+            )
+        )
+
+        if (
+            citation
+            and citation
+            not in citations
+        ):
+
+            citations.append(
+                citation
+            )
+
+    return {
+        "answer": "\n".join(
+            lines
+        ),
+        "model": None,
+        "generation_method": (
+            "deterministic-licensing-history"
+        ),
+        "citations": citations,
+        "sources": (
+            filter_sources_by_citations(
+                evidence=evidence,
+                citations=citations,
+            )
+        ),
+    }
 
 def generate_licensing_answer(
+    question: str,
     evidence: list[dict],
 ) -> dict:
     """
     Generate licensing answers directly from structured
     records. No LLM is used.
     """
+    if wants_licensing_history(
+        question
+    ):
 
+        return (
+            generate_licensing_history_answer(
+                evidence
+            )
+        )
     if not evidence:
 
         return {
@@ -2616,7 +2978,8 @@ def answer_from_evidence(
     }:
 
         return generate_licensing_answer(
-            evidence
+            question=question,
+            evidence=evidence,
         )
 
     fee_answer = generate_fee_answer(

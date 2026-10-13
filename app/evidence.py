@@ -434,6 +434,11 @@ def licensing_result_to_evidence(
                 "published_date"
             )
         ),
+        "effective_date": clean_text(
+            record.get(
+                "effective_date"
+            )
+        ),
         "source_status": clean_text(
             record.get(
                 "source_status"

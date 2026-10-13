@@ -64,22 +64,56 @@ def normalize_licence_code(
     text: str,
 ) -> str | None:
     """
-    Find and normalize a Zambia mining licence code.
+    Extract and normalize a MineLens licensing code.
 
-    Example:
-
-        42553-HQ- LML
-
-    becomes:
+    Supports both historical formatting such as:
 
         42553-HQ-LML
+
+    and newer MMMD formatting such as:
+
+        43225- HQLML
+        43225-HQLML
+        43225 HQ LML
+
+    All accepted variants are normalized to:
+
+        43225-HQ-LML
     """
 
-    match = LICENCE_CODE_PATTERN.search(
+    if not text:
+        return None
+
+    normalized = clean_text(
         text
+    ).upper()
+
+    normalized = (
+        normalized
+        .replace(
+            "–",
+            "-",
+        )
+        .replace(
+            "—",
+            "-",
+        )
     )
 
-    if match is None:
+    match = re.search(
+        (
+            r"\b"
+            r"(\d{4,6})"
+            r"\s*-?\s*"
+            r"HQ"
+            r"\s*-?\s*"
+            r"(AMR|LEL|LML|MPL|SEL|SML)"
+            r"\b"
+        ),
+        normalized,
+    )
+
+    if not match:
         return None
 
     number = match.group(
@@ -88,7 +122,7 @@ def normalize_licence_code(
 
     suffix = match.group(
         2
-    ).upper()
+    )
 
     return (
         f"{number}-HQ-{suffix}"
@@ -374,12 +408,35 @@ def looks_like_section_title(
 ) -> bool:
     """
     Determine whether a table row looks like a licence
-    category heading.
+    or mining-right category heading.
+
+    Supports both the June and September 2026
+    committee-page wording.
     """
 
-    lowered = text.lower()
+    lowered = clean_text(
+        text
+    ).lower()
 
     category_words = (
+        "large-scale mining licence",
+        "large scale mining licence",
+        "small-scale mining licence",
+        "small scale mining licence",
+        "large-scale mining license",
+        "large scale mining license",
+        "small-scale mining license",
+        "small scale mining license",
+        "artisanal mining right",
+        "artisanal mining rights",
+        "large-scale exploration licence",
+        "large scale exploration licence",
+        "small-scale exploration licence",
+        "small scale exploration licence",
+        "large-scale exploration license",
+        "large scale exploration license",
+        "small-scale exploration license",
+        "small scale exploration license",
         "licence application",
         "license application",
         "mining right",
@@ -390,8 +447,8 @@ def looks_like_section_title(
     )
 
     return any(
-        word in lowered
-        for word in category_words
+        phrase in lowered
+        for phrase in category_words
     )
 
 
@@ -639,8 +696,13 @@ def extract_licensing_records(
             decision = normalize_decision(
                 decision_text
             )
-
-            # ---------------------------------------------
+            if (
+                decision
+                and decision.casefold()
+                == "rejeced"
+            ):
+                decision = "Rejected"
+                        # ---------------------------------------------
             # Deadline
             # ---------------------------------------------
 

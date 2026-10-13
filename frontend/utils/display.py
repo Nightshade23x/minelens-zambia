@@ -99,6 +99,8 @@ def generation_label(
             "Requirements extraction",
         "structured-facilities":
             "Facility intelligence",
+        "deterministic-licensing-history":
+            "Licence history",
     }
 
     if not generation_method:
