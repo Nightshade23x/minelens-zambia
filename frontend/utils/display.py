@@ -14,6 +14,9 @@ SPECIAL_SOURCE_TITLES = {
 
     "zambia_licensing_committee_results_june_2026.html":
         "Mining Licensing Committee Results — June 2026",
+
+    "zambia_licensing_committee_results_september_2026.html":
+        "Mining Licensing Committee Results — September 2026",
 }
 
 
