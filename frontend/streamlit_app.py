@@ -33,6 +33,7 @@ from frontend.utils.display import (
 )
 
 from frontend.components.licensing import (
+    display_licensing_decision_changes,
     display_licensing_history,
     display_licensing_record,
     licensing_answer_summary,
@@ -804,27 +805,37 @@ if result_state:
                 )
             )
 
+            decision_change_mode = bool(
+                licensing_filters.get(
+                    "decision_changes"
+                )
+            )
+
             history_mode = bool(
                 licensing_filters.get(
                     "history"
                 )
             )
 
-        if history_mode:
+            if decision_change_mode:
 
-            frontend_answer = (
-                licensing_history_answer_summary(
-                    evidence
+                frontend_answer = None
+
+            elif history_mode:
+
+                frontend_answer = (
+                    licensing_history_answer_summary(
+                        evidence
+                    )
                 )
-            )
 
-        else:
+            else:
 
-            frontend_answer = (
-                licensing_answer_summary(
-                    evidence
+                frontend_answer = (
+                    licensing_answer_summary(
+                        evidence
+                    )
                 )
-            )
 
         if not frontend_answer:
 
@@ -1006,8 +1017,8 @@ if result_state:
             search_result
         )
     # =====================================================
-    # LICENSING RECORDS
-    # =====================================================
+# LICENSING RECORDS
+# =====================================================
 
     licensing_evidence = [
         item
@@ -1029,13 +1040,25 @@ if result_state:
             )
         )
 
+        decision_change_mode = bool(
+            licensing_filters.get(
+                "decision_changes"
+            )
+        )
+
         history_mode = bool(
             licensing_filters.get(
                 "history"
             )
         )
 
-        if history_mode:
+        if decision_change_mode:
+
+            display_licensing_decision_changes(
+                licensing_evidence
+            )
+
+        elif history_mode:
 
             st.subheader(
                 "Licence decision history"
@@ -1048,11 +1071,13 @@ if result_state:
         else:
 
             st.subheader(
-                "Licence record"
-                if len(
-                    licensing_evidence
-                ) == 1
-                else "Licence records"
+                (
+                    "Licence record"
+                    if len(
+                        licensing_evidence
+                    ) == 1
+                    else "Licence records"
+                )
             )
 
             for item in licensing_evidence:
@@ -1060,7 +1085,8 @@ if result_state:
                 display_licensing_record(
                     item
                 )
-    # =====================================================
+
+# =====================================================
     # SOURCES
     # =====================================================
 

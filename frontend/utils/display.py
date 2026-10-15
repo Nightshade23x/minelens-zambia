@@ -104,6 +104,8 @@ def generation_label(
             "Facility intelligence",
         "deterministic-licensing-history":
             "Licence history",
+        "deterministic-licensing-decision-changes":
+            "Decision comparison",
     }
 
     if not generation_method:

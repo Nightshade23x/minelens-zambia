@@ -502,6 +502,84 @@ def licensing_result_to_evidence(
                     "deadline_iso"
                 )
             ),
+            "decision_change": bool(
+                record.get(
+                    "decision_change",
+                    False,
+                )
+            ),
+
+            "decision_change_total": (
+                record.get(
+                    "decision_change_total"
+                )
+            ),
+
+            "previous_decision": clean_text(
+                record.get(
+                    "previous_decision"
+                )
+            ),
+
+            "latest_decision": clean_text(
+                record.get(
+                    "latest_decision"
+                )
+            ),
+
+            "previous_event_date": clean_text(
+                record.get(
+                    "previous_event_date"
+                )
+            ),
+
+            "latest_event_date": clean_text(
+                record.get(
+                    "latest_event_date"
+                )
+            ),
+
+            "previous_source_id": clean_text(
+                record.get(
+                    "previous_source_id"
+                )
+            ),
+
+            "previous_source_url": clean_text(
+                record.get(
+                    "previous_source_url"
+                )
+            ),
+
+            "previous_title": clean_text(
+                record.get(
+                    "previous_title"
+                )
+            ),
+
+            "latest_source_id": clean_text(
+                record.get(
+                    "latest_source_id"
+                )
+            ),
+
+            "latest_source_url": clean_text(
+                record.get(
+                    "latest_source_url"
+                )
+            ),
+
+            "latest_title": clean_text(
+                record.get(
+                    "latest_title"
+                )
+            ),
+            "decision_change_transition_counts": (
+                record.get(
+                    "decision_change_transition_counts",
+                    {},
+                )
+            ),
         },
         "retrieval": {
             "score": (

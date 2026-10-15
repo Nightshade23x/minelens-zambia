@@ -953,3 +953,212 @@ def display_licensing_history(
         "MineLens as proof that a mining right has "
         "been issued or is currently active."
     )
+
+
+def display_licensing_decision_changes(
+    evidence: list[dict],
+) -> None:
+    """
+    Render licensing applications whose committee
+    decision changed between available meetings.
+    """
+
+    change_items = [
+        item
+        for item in evidence
+        if (
+            item.get(
+                "evidence_type"
+            )
+            == "licensing_record"
+            and item.get(
+                "record",
+                {},
+            ).get(
+                "decision_change"
+            )
+        )
+    ]
+
+    if not change_items:
+        return
+
+    first_record = (
+        change_items[
+            0
+        ].get(
+            "record",
+            {},
+        )
+    )
+
+    total = (
+        first_record.get(
+            "decision_change_total"
+        )
+        or len(
+            change_items
+        )
+    )
+
+    transition_counts = (
+        first_record.get(
+            "decision_change_transition_counts",
+            {},
+        )
+        or {}
+    )
+
+    st.subheader(
+        "Committee decision changes"
+    )
+
+    st.caption(
+        (
+            "Comparison of repeated applications "
+            "across the available licensing "
+            "committee batches."
+        )
+    )
+
+    columns = st.columns(
+        4
+    )
+
+    columns[0].metric(
+        "Changed applications",
+        total,
+    )
+
+    columns[1].metric(
+        "Deferred → Approved",
+        transition_counts.get(
+            "Deferred -> Approved",
+            0,
+        ),
+    )
+
+    columns[2].metric(
+        "Deferred → Rejected",
+        transition_counts.get(
+            "Deferred -> Rejected",
+            0,
+        ),
+    )
+
+    columns[3].metric(
+        "Rejected → Approved",
+        transition_counts.get(
+            "Rejected -> Approved",
+            0,
+        ),
+    )
+
+    rows: list[dict] = []
+
+    for item in change_items:
+
+        record = item.get(
+            "record",
+            {},
+        )
+
+        districts = record.get(
+            "districts",
+            [],
+        )
+
+        if isinstance(
+            districts,
+            list,
+        ):
+
+            district_text = ", ".join(
+                clean_text(
+                    value
+                )
+                for value in districts
+                if clean_text(
+                    value
+                )
+            )
+
+        else:
+
+            district_text = clean_text(
+                districts
+            )
+
+        location_parts = [
+            value
+            for value in (
+                district_text,
+                clean_text(
+                    record.get(
+                        "province"
+                    )
+                ),
+            )
+            if value
+        ]
+
+        rows.append(
+            {
+                "Licence": clean_text(
+                    record.get(
+                        "licence_code"
+                    )
+                ),
+                "Applicant": clean_text(
+                    record.get(
+                        "applicant"
+                    )
+                ),
+                "Type": clean_text(
+                    record.get(
+                        "licence_type"
+                    )
+                ),
+                "Previous": clean_text(
+                    record.get(
+                        "previous_decision"
+                    )
+                ),
+                "Latest": clean_text(
+                    record.get(
+                        "latest_decision"
+                    )
+                ),
+                "Location": ", ".join(
+                    location_parts
+                ),
+            }
+        )
+
+    st.dataframe(
+        rows,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    if len(
+        change_items
+    ) < total:
+
+        st.caption(
+            (
+                f"Showing {len(change_items)} "
+                f"of {total} changed applications. "
+                "Increase the result limit to "
+                "view more."
+            )
+        )
+
+    st.caption(
+        (
+            "These are licensing committee decisions. "
+            "An Approved decision is not treated by "
+            "MineLens as proof that a mining right "
+            "has been issued or is currently active."
+        )
+    )

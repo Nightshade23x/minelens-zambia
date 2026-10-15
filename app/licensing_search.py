@@ -1007,6 +1007,262 @@ def wants_licensing_history(
         for term in history_terms
     )
 
+def wants_licensing_decision_changes(
+    query: str,
+) -> bool:
+    """
+    Detect requests comparing licensing decisions
+    across committee meetings.
+    """
+
+    normalized = " ".join(
+        query.casefold().split()
+    )
+
+    change_terms = (
+        "decision changes",
+        "decisions changed",
+        "changed decisions",
+        "whose decision changed",
+        "whose decisions changed",
+        "which decision changed",
+        "which decisions changed",
+        "decision changed between",
+        "decisions changed between",
+        "changes between committee meetings",
+        "changed between committee meetings",
+    )
+
+    return any(
+        term in normalized
+        for term in change_terms
+    )
+
+
+def licensing_decision_change_records(
+    records: list[dict],
+) -> list[dict]:
+    """
+    Compare consecutive committee events for each
+    licence/application code and return only genuine
+    decision transitions.
+
+    Each returned record represents the later event while
+    preserving details about the preceding event.
+    """
+
+    grouped: dict[
+        str,
+        list[dict],
+    ] = {}
+
+    for record in records:
+
+        licence_code = str(
+            record.get(
+                "licence_code"
+            )
+            or ""
+        ).strip()
+
+        if not licence_code:
+            continue
+
+        grouped.setdefault(
+            licence_code,
+            [],
+        ).append(
+            record
+        )
+
+    changes: list[dict] = []
+
+    for (
+        licence_code,
+        events,
+    ) in grouped.items():
+
+        if len(
+            events
+        ) < 2:
+            continue
+
+        ordered = sorted(
+            events,
+            key=licensing_event_date,
+        )
+
+        for (
+            previous,
+            current,
+        ) in zip(
+            ordered,
+            ordered[1:],
+        ):
+
+            previous_decision = str(
+                previous.get(
+                    "decision"
+                )
+                or ""
+            ).strip()
+
+            current_decision = str(
+                current.get(
+                    "decision"
+                )
+                or ""
+            ).strip()
+
+            if (
+                not previous_decision
+                or not current_decision
+            ):
+                continue
+
+            if (
+                previous_decision.casefold()
+                == current_decision.casefold()
+            ):
+                continue
+
+            change_record = dict(
+                current
+            )
+
+            change_record[
+                "decision_change"
+            ] = True
+
+            change_record[
+                "previous_decision"
+            ] = previous_decision
+
+            change_record[
+                "latest_decision"
+            ] = current_decision
+
+            change_record[
+                "previous_event_date"
+            ] = licensing_event_date(
+                previous
+            )
+
+            change_record[
+                "latest_event_date"
+            ] = licensing_event_date(
+                current
+            )
+
+            change_record[
+                "previous_source_id"
+            ] = previous.get(
+                "source_id"
+            )
+
+            change_record[
+                "previous_source_url"
+            ] = previous.get(
+                "source_url"
+            )
+
+            change_record[
+                "previous_title"
+            ] = previous.get(
+                "title"
+            )
+
+            change_record[
+                "latest_source_id"
+            ] = current.get(
+                "source_id"
+            )
+
+            change_record[
+                "latest_source_url"
+            ] = current.get(
+                "source_url"
+            )
+
+            change_record[
+                "latest_title"
+            ] = current.get(
+                "title"
+            )
+
+            changes.append(
+                change_record
+            )
+
+    changes.sort(
+        key=lambda record: (
+            record.get(
+                "latest_event_date"
+            )
+            or "",
+            record.get(
+                "licence_code"
+            )
+            or "",
+        ),
+        reverse=True,
+    )
+
+
+    transition_counts: dict[
+        str,
+        int,
+    ] = {}
+
+    for record in changes:
+
+        previous_decision = str(
+            record.get(
+                "previous_decision"
+            )
+            or ""
+        ).strip()
+
+        latest_decision = str(
+            record.get(
+                "latest_decision"
+            )
+            or ""
+        ).strip()
+
+        transition = (
+            f"{previous_decision} -> "
+            f"{latest_decision}"
+        )
+
+        transition_counts[
+            transition
+        ] = (
+            transition_counts.get(
+                transition,
+                0,
+            )
+            + 1
+        )
+
+    total = len(
+        changes
+    )
+
+    for record in changes:
+
+        record[
+            "decision_change_total"
+        ] = total
+
+        record[
+            "decision_change_transition_counts"
+        ] = dict(
+            transition_counts
+        )
+
+    return changes
+
 
 def latest_licensing_records(
     records: list[dict],
@@ -1096,13 +1352,28 @@ def search_licensing_records(
             "top_k must be greater than zero."
         )
 
-    history_mode = (
-        wants_licensing_history(
+    change_mode = (
+        wants_licensing_decision_changes(
             query
         )
     )
 
-    if history_mode:
+    history_mode = (
+        wants_licensing_history(
+            query
+        )
+        or change_mode
+    )
+
+    if change_mode:
+
+        searchable_records = (
+            licensing_decision_change_records(
+                records
+            )
+        )
+
+    elif history_mode:
 
         searchable_records = sorted(
             records,
@@ -1192,12 +1463,19 @@ def search_licensing_records(
         "history": (
             history_mode
         ),
+        "decision_changes": (
+            change_mode
+),
     }
 
     filter_arguments = {
         key: value
         for key, value in filters.items()
-        if key != "history"
+        if key
+        not in {
+            "history",
+            "decision_changes",
+        }
     }
 
     filtered = filter_records(
@@ -1209,6 +1487,26 @@ def search_licensing_records(
 
         return (
             [],
+            filters,
+        )
+    if change_mode:
+
+        chunks = (
+            records_to_search_chunks(
+                filtered
+            )
+        )
+
+        return (
+            [
+                {
+                    "score": 1.0,
+                    "chunk": chunk,
+                }
+                for chunk in chunks[
+                    :top_k
+                ]
+            ],
             filters,
         )
 

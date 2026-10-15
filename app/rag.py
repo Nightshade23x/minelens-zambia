@@ -17,6 +17,7 @@ from app.context_expansion import (
 )
 from app.licensing_search import (
     wants_licensing_history,
+    wants_licensing_decision_changes,
 )
 # ---------------------------------------------------------
 # Configuration
@@ -1447,6 +1448,15 @@ def generate_licensing_answer(
     Generate licensing answers directly from structured
     records. No LLM is used.
     """
+    if wants_licensing_decision_changes(
+        question
+    ):
+
+        return (
+            generate_licensing_decision_changes_answer(
+                evidence
+            )
+        )
     if wants_licensing_history(
         question
     ):
@@ -1535,7 +1545,217 @@ def generate_licensing_answer(
         ),
     }
 
+def generate_licensing_decision_changes_answer(
+    evidence: list[dict],
+) -> dict:
+    """
+    Summarize licensing committee decision changes
+    across available committee batches.
 
+    No language model is used.
+    """
+
+    if not evidence:
+
+        return {
+            "answer": (
+                "No licensing decision changes "
+                "were found."
+            ),
+            "model": None,
+            "generation_method": (
+                "deterministic-licensing-decision-changes"
+            ),
+            "citations": [],
+            "sources": [],
+        }
+
+    first_record = evidence[
+        0
+    ].get(
+        "record",
+        {},
+    )
+
+    total = (
+        first_record.get(
+            "decision_change_total"
+        )
+        or len(
+            evidence
+        )
+    )
+
+    transition_counts = (
+        first_record.get(
+            "decision_change_transition_counts",
+            {},
+        )
+        or {}
+    )
+
+    lines = [
+        (
+            f"{total} applications changed "
+            "committee decision between the "
+            "available licensing committee "
+            "batches. [S1][S2]"
+        ),
+        "",
+        "Decision transitions:",
+    ]
+
+    preferred_order = (
+        "Deferred -> Approved",
+        "Deferred -> Rejected",
+        "Rejected -> Approved",
+    )
+
+    shown: set[str] = set()
+
+    for transition in preferred_order:
+
+        count = transition_counts.get(
+            transition,
+            0,
+        )
+
+        if not count:
+            continue
+
+        display_transition = (
+            transition.replace(
+                "->",
+                "→",
+            )
+        )
+
+        lines.append(
+            f"- {display_transition}: {count}"
+        )
+
+        shown.add(
+            transition
+        )
+
+    for (
+        transition,
+        count,
+    ) in sorted(
+        transition_counts.items()
+    ):
+
+        if transition in shown:
+            continue
+
+        display_transition = (
+            transition.replace(
+                "->",
+                "→",
+            )
+        )
+
+        lines.append(
+            f"- {display_transition}: {count}"
+        )
+
+    lines.extend(
+        [
+            "",
+            (
+                "These are licensing committee "
+                "decisions. An Approved decision "
+                "is not treated as proof that a "
+                "mining right has been issued or "
+                "is currently active."
+            ),
+        ]
+    )
+
+    previous_url = ""
+
+    latest_url = ""
+
+    for item in evidence:
+
+        record = item.get(
+            "record",
+            {},
+        )
+
+        if not previous_url:
+
+            previous_url = clean_text(
+                record.get(
+                    "previous_source_url"
+                )
+            )
+
+        if not latest_url:
+
+            latest_url = clean_text(
+                record.get(
+                    "latest_source_url"
+                )
+            )
+
+    sources: list[dict] = []
+
+    citations: list[str] = []
+
+    if latest_url:
+
+        sources.append(
+            {
+                "source_id": "S1",
+                "title": (
+                    "Mining Licensing Committee "
+                    "Results — September 2026"
+                ),
+                "document": (
+                    "zambia_licensing_committee_"
+                    "results_september_2026.html"
+                ),
+                "source_url": latest_url,
+            }
+        )
+
+        citations.append(
+            "S1"
+        )
+
+    if previous_url:
+
+        sources.append(
+            {
+                "source_id": "S2",
+                "title": (
+                    "Mining Licensing Committee "
+                    "Results — June 2026"
+                ),
+                "document": (
+                    "zambia_licensing_committee_"
+                    "results_june_2026.html"
+                ),
+                "source_url": previous_url,
+            }
+        )
+
+        citations.append(
+            "S2"
+        )
+
+    return {
+        "answer": "\n".join(
+            lines
+        ),
+        "model": None,
+        "generation_method": (
+            "deterministic-licensing-decision-changes"
+        ),
+        "citations": citations,
+        "sources": sources,
+    }
 # ---------------------------------------------------------
 # Deterministic application-fee extraction
 # ---------------------------------------------------------
