@@ -595,6 +595,351 @@ def licensing_result_to_evidence(
 # Unified normalization
 # ---------------------------------------------------------
 
+
+def exploration_result_to_evidence(
+    result: dict,
+    source_number: int,
+    max_text_chars: int = (
+        DEFAULT_MAX_TEXT_CHARS
+    ),
+) -> dict:
+    """
+    Convert one structured exploration result into the
+    common MineLens evidence format.
+    """
+
+    record = result
+
+    record_type = clean_text(
+        record.get(
+            "record_type"
+        )
+    )
+
+    hole_id = clean_text(
+        record.get(
+            "hole_id"
+        )
+    )
+
+    target = clean_text(
+        record.get(
+            "target"
+        )
+    )
+
+    project = clean_text(
+        record.get(
+            "project"
+        )
+    )
+
+    source_title = clean_text(
+        record.get(
+            "source_title"
+        )
+    )
+
+    if (
+        record_type
+        == "hole_maximum_assay"
+    ):
+
+        title = (
+            f"{hole_id} - "
+            "Maximum individual zinc assay"
+        )
+
+        maximum_assay_pct = (
+            record.get(
+                "maximum_assay_pct"
+            )
+        )
+
+        text = (
+            f"{hole_id} at {target or project}. "
+            f"Maximum individual zinc assay: "
+            f"{maximum_assay_pct}% Zn. "
+            f"Reporting basis: "
+            f"{clean_text(record.get('reporting_basis'))}. "
+            f"Laboratory: "
+            f"{clean_text(record.get('laboratory'))}."
+        )
+
+    else:
+
+        title = (
+            f"{hole_id} - "
+            f"{target or 'Drill intersection'}"
+        )
+
+        status = clean_text(
+            record.get(
+                "status"
+            )
+        )
+
+        if (
+            status
+            == "no_reportable_intersection"
+        ):
+
+            text = (
+                f"{hole_id} at "
+                f"{target or project}. "
+                f"{clean_text(record.get('comment'))}"
+            )
+
+        else:
+
+            text = (
+                f"{hole_id} at "
+                f"{target or project}. "
+                f"From {record.get('from_m')} m "
+                f"to {record.get('to_m')} m. "
+                f"Width {record.get('width_m')} m. "
+                f"Zinc grade "
+                f"{record.get('zinc_pct')}%. "
+                f"Lead grade "
+                f"{record.get('lead_pct')}%. "
+                f"Cut-off "
+                f"{record.get('cutoff_zinc_pct')}% Zn. "
+                f"Laboratory: "
+                f"{clean_text(record.get('laboratory'))}."
+            )
+
+    search_text = clean_text(
+        record.get(
+            "search_text"
+        )
+    )
+
+    if search_text:
+        text = (
+            text
+            + "\n\n"
+            + search_text
+        )
+
+    chunk_id_parts = [
+        "exploration",
+        record_type,
+        hole_id,
+    ]
+
+    sequence_number = record.get(
+        "sequence_number"
+    )
+
+    if sequence_number is not None:
+        chunk_id_parts.append(
+            str(
+                sequence_number
+            )
+        )
+
+    chunk_id = "_".join(
+        part
+        for part in chunk_id_parts
+        if part
+    ).casefold()
+
+    return {
+        "source_id": (
+            f"S{source_number}"
+        ),
+
+        "evidence_type": (
+            "exploration_result"
+        ),
+
+        "title": title,
+
+        "document": (
+            source_title
+            or (
+                "Kabwe Drilling Results "
+                "from ALS Laboratories"
+            )
+        ),
+
+        "pages": None,
+
+        "chunk_id": (
+            chunk_id
+        ),
+
+        "source_url": clean_text(
+            record.get(
+                "source_url"
+            )
+        ),
+
+        "published_date": clean_text(
+            record.get(
+                "published_date"
+            )
+        ),
+
+        "source_status": "current",
+
+        "text": truncate_text(
+            text,
+            max_chars=(
+                max_text_chars
+            ),
+        ),
+
+        "record": {
+            "record_type": (
+                record_type
+            ),
+
+            "project": (
+                project
+            ),
+
+            "project_alias": clean_text(
+                record.get(
+                    "project_alias"
+                )
+            ),
+
+            "project_area": clean_text(
+                record.get(
+                    "project_area"
+                )
+            ),
+
+            "target": (
+                target
+            ),
+
+            "hole_id": (
+                hole_id
+            ),
+
+            "status": clean_text(
+                record.get(
+                    "status"
+                )
+            ),
+
+            "from_m": (
+                record.get(
+                    "from_m"
+                )
+            ),
+
+            "to_m": (
+                record.get(
+                    "to_m"
+                )
+            ),
+
+            "width_m": (
+                record.get(
+                    "width_m"
+                )
+            ),
+
+            "calculated_width_m": (
+                record.get(
+                    "calculated_width_m"
+                )
+            ),
+
+            "width_matches_depths": (
+                record.get(
+                    "width_matches_depths"
+                )
+            ),
+
+            "zinc_pct": (
+                record.get(
+                    "zinc_pct"
+                )
+            ),
+
+            "lead_pct": (
+                record.get(
+                    "lead_pct"
+                )
+            ),
+
+            "cutoff_zinc_pct": (
+                record.get(
+                    "cutoff_zinc_pct"
+                )
+            ),
+
+            "cutoff_text": clean_text(
+                record.get(
+                    "cutoff_text"
+                )
+            ),
+
+            "comment": clean_text(
+                record.get(
+                    "comment"
+                )
+            ),
+
+            "commodity": clean_text(
+                record.get(
+                    "commodity"
+                )
+            ),
+
+            "commodity_symbol": clean_text(
+                record.get(
+                    "commodity_symbol"
+                )
+            ),
+
+            "maximum_assay_pct": (
+                record.get(
+                    "maximum_assay_pct"
+                )
+            ),
+
+            "reporting_basis": clean_text(
+                record.get(
+                    "reporting_basis"
+                )
+            ),
+
+            "laboratory": clean_text(
+                record.get(
+                    "laboratory"
+                )
+            ),
+
+            "assay_method": clean_text(
+                record.get(
+                    "assay_method"
+                )
+            ),
+
+            "company": clean_text(
+                record.get(
+                    "company"
+                )
+            ),
+
+            "source_type": clean_text(
+                record.get(
+                    "source_type"
+                )
+            ),
+        },
+
+        "retrieval": {
+            "structured": True,
+        },
+    }
+
+
 def normalize_evidence(
     search_result: dict,
     max_evidence: int = (
@@ -666,6 +1011,20 @@ def normalize_evidence(
 
             item = (
                 licensing_result_to_evidence(
+                    result=result,
+                    source_number=(
+                        source_number
+                    ),
+                    max_text_chars=(
+                        max_text_chars
+                    ),
+                )
+            )
+
+        elif route == "exploration":
+
+            item = (
+                exploration_result_to_evidence(
                     result=result,
                     source_number=(
                         source_number

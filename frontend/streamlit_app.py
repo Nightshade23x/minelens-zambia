@@ -99,6 +99,10 @@ if str(ROOT_DIR) not in sys.path:
 
 
 
+from frontend.components.exploration import (
+    display_exploration_results,
+)
+
 from app.evidence import normalize_evidence  # noqa: E402
 from app.facility_answers import (  # noqa: E402
     answer_facility_result,
@@ -116,6 +120,7 @@ from app.router import (  # noqa: E402
     ROUTE_LICENSING,
     ROUTE_MINING_STATISTICS,
     ROUTE_FACILITIES,
+    ROUTE_EXPLORATION,
     route_query,
     search_mine,
 )
@@ -620,6 +625,24 @@ if submitted:
                         5,
                     )
 
+                # Structured exploration answers should use
+                # the same result set displayed in the table.
+                if (
+                    search_result.get(
+                        "route"
+                    )
+                    == ROUTE_EXPLORATION
+                ):
+                    effective_evidence_k = max(
+                        effective_evidence_k,
+                        len(
+                            search_result.get(
+                                "results",
+                                [],
+                            )
+                        ),
+                    )
+
                 evidence = normalize_evidence(
                     search_result=search_result,
                     max_evidence=effective_evidence_k,
@@ -1019,6 +1042,21 @@ if result_state:
     # =====================================================
 # LICENSING RECORDS
 # =====================================================
+
+    # =====================================================
+    # EXPLORATION RESULTS
+    # =====================================================
+
+    if (
+        search_result.get(
+            "route"
+        )
+        == ROUTE_EXPLORATION
+    ):
+
+        display_exploration_results(
+            search_result
+        )
 
     licensing_evidence = [
         item

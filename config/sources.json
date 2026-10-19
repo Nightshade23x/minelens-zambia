@@ -189,5 +189,19 @@
     "effective_date": "2026-09-28",
     "superseded_by": null,
     "supersedes": []
-  }
+  },
+{
+  "id": "shuka_kabwe_drilling_kbdd06_11_als_october_2026",
+  "title": "Kabwe Drilling KBDD06-11 - Drilling Results from ALS Laboratories",
+  "agency": "Shuka Minerals Plc",
+  "document_type": "exploration_results",
+  "source_type": "html",
+  "status": "current",
+  "url": "https://www.shukaminerals.com/post/kabwe-drilling-kbdd06-11-drilling-results-from-als-laboratories",
+  "filename": "shuka_kabwe_drilling_kbdd06_11_als_october_2026.html",
+  "published_date": "2026-10-16",
+  "effective_date": "2026-10-16",
+  "superseded_by": null,
+  "supersedes": []
+}
 ]

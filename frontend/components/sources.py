@@ -99,7 +99,7 @@ def display_sources(
         return
 
     st.subheader(
-        "Official sources"
+        "Sources"
     )
 
     for source in sources:

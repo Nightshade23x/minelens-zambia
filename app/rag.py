@@ -19,6 +19,10 @@ from app.licensing_search import (
     wants_licensing_history,
     wants_licensing_decision_changes,
 )
+from app.exploration_answers import (
+    answer_exploration_result,
+)
+
 # ---------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------
@@ -3192,6 +3196,15 @@ def answer_from_evidence(
         )
         for item in evidence
     }
+
+    if evidence_types == {
+        "exploration_result"
+    }:
+
+        return answer_exploration_result(
+            question=question,
+            evidence=evidence,
+        )
 
     if evidence_types == {
         "licensing_record"

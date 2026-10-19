@@ -34,6 +34,11 @@ from app.facility_search import (
     search_facilities as search_facility_records,
 )
 
+from app.exploration_search import (
+    has_exploration_intent,
+    query_exploration,
+)
+
 # ---------------------------------------------------------
 # Routes
 # ---------------------------------------------------------
@@ -43,11 +48,14 @@ ROUTE_LICENSING = "licensing"
 ROUTE_MINING_STATISTICS = "mining_statistics"
 ROUTE_FACILITIES = "facilities"
 
+ROUTE_EXPLORATION = "exploration"
+
 VALID_ROUTES = {
     ROUTE_DOCUMENTS,
     ROUTE_LICENSING,
     ROUTE_MINING_STATISTICS,
     ROUTE_FACILITIES,
+    ROUTE_EXPLORATION,
 }
 
 
@@ -738,6 +746,31 @@ def route_query(
                 "ranking or trend statistics."
             ),
         }
+    # Structured exploration / drilling intelligence.
+    #
+    # This is checked before facilities because a query
+    # may mention a known mine while specifically asking
+    # about drill holes, assays or mineralised intervals.
+    #
+    # Explicit licensing language is excluded so
+    # exploration-right and licence queries remain in the
+    # licensing subsystem.
+    if (
+        not licensing_context
+        and has_exploration_intent(
+            query
+        )
+    ):
+        return {
+            "route": ROUTE_EXPLORATION,
+            "reason": (
+                "The query asks about structured "
+                "exploration or drilling results, "
+                "such as drill holes, assay grades, "
+                "mineralised intervals or targets."
+            ),
+        }
+
     # Structured mine/facility intelligence.
     #
     # This is checked before general document intent
@@ -1704,6 +1737,88 @@ def search_facilities(
             ),
     }
 # ---------------------------------------------------------
+# Exploration search
+# ---------------------------------------------------------
+
+def search_exploration(
+    query: str,
+    top_k: int = 5,
+) -> dict:
+    """
+    Run structured exploration/drilling-result search.
+    """
+
+    if top_k <= 0:
+        raise ValueError(
+            "top_k must be greater than zero."
+        )
+
+    result = query_exploration(
+        query=query,
+        top_k=top_k,
+    )
+
+    return {
+        "route":
+            ROUTE_EXPLORATION,
+
+        "results":
+            result.get(
+                "results",
+                [],
+            ),
+
+        "exploration_intent":
+            result.get(
+                "intent"
+            ),
+
+        "hole_ids":
+            result.get(
+                "hole_ids",
+                [],
+            ),
+
+        "target":
+            result.get(
+                "target"
+            ),
+
+        "zinc_min":
+            result.get(
+                "zinc_min"
+            ),
+
+        "zinc_operator":
+            result.get(
+                "zinc_operator"
+            ),
+
+        "width_min":
+            result.get(
+                "width_min"
+            ),
+
+        "intersection_record_count":
+            result.get(
+                "intersection_record_count",
+                0,
+            ),
+
+        "maximum_assay_record_count":
+            result.get(
+                "maximum_assay_record_count",
+                0,
+            ),
+
+        "source_url":
+            result.get(
+                "source_url"
+            ),
+    }
+
+
+# ---------------------------------------------------------
 # Unified MineLens search
 # ---------------------------------------------------------
 
@@ -1719,7 +1834,7 @@ def search_mine(
 
     The query is routed automatically unless force_route
     explicitly selects documents, licensing, structured
-    mining statistics or facilities.
+    mining statistics, facilities or exploration.
     """
 
     if not query.strip():
@@ -1740,8 +1855,9 @@ def search_mine(
             raise ValueError(
                 "force_route must be "
                 "'documents', 'licensing', "
-                "'mining_statistics' or "
-                "'facilities'."
+                "'mining_statistics', "
+                "'facilities' or "
+                "'exploration'."
             )
 
         route_info = {
@@ -1782,6 +1898,17 @@ def search_mine(
     ):
         payload = (
             search_facilities(
+                query=query,
+                top_k=top_k,
+            )
+        )
+
+    elif (
+        selected_route
+        == ROUTE_EXPLORATION
+    ):
+        payload = (
+            search_exploration(
                 query=query,
                 top_k=top_k,
             )

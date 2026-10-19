@@ -61,6 +61,10 @@ def route_label(
     }
 
 
+    labels[
+        "exploration"
+    ] = "Exploration"
+
     return labels.get(
         route,
         clean_text(
@@ -107,6 +111,10 @@ def generation_label(
         "deterministic-licensing-decision-changes":
             "Decision comparison",
     }
+
+    labels[
+        "structured-exploration"
+    ] = "Structured exploration"
 
     if not generation_method:
         return "Unknown"
