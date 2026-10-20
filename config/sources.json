@@ -8,7 +8,8 @@
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2026/06/eCopy-STATISTICAL-BULLETIN.pdf",
     "filename": "zambia_annual_mining_statistical_bulletin_2024.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "national_critical_minerals_strategy_2024_2028",
@@ -19,7 +20,8 @@
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2024/09/1-National-Critical-Minerals-Strategy-2024-%E2%80%93-2028-Booklet-August-27-2024.pdf",
     "filename": "zambia_national_critical_minerals_strategy_2024_2028.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "national_mineral_resources_development_policy_2022",
@@ -30,7 +32,8 @@
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2024/09/National-Mineral-Resources-Development-Policy-2022.pdf",
     "filename": "zambia_national_mineral_resources_development_policy_2022.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "application_for_mining_right",
@@ -41,7 +44,8 @@
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2022/06/APPLICATION-FOR-MINING-RIGHT.pdf",
     "filename": "zambia_application_for_mining_right_form_i.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "mining_area_charges",
@@ -53,7 +57,8 @@
     "superseded_by": "mining_fees_area_charges_2024",
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2022/06/APPLICATION-FEES-2016.pdf",
     "filename": "zambia_mining_rights_area_charges.pdf",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "ministry_monitoring_evaluation_plan_2022_2026",
@@ -64,7 +69,8 @@
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2025/07/Ministry-of-Mines-and-Minerals-Development-Monitoring-and-Evaluation-Plan-2022-2026.pdf",
     "filename": "zambia_mining_monitoring_evaluation_plan_2022_2026.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "local_content_regulations_2025",
@@ -75,7 +81,8 @@
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2025/12/The-Geological-and-Minerals-Development-Preference-for-Zambian-Goods-and-Services-Regulations-2025.pdf",
     "filename": "zambia_mining_local_content_regulations_2025.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "mining_rights_requirements",
@@ -86,7 +93,8 @@
     "url": "https://www.mmmd.gov.zm/?page_id=1880",
     "filename": "zambia_mining_rights_requirements.html",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "geological_minerals_development_act_2025",
@@ -99,7 +107,8 @@
     "effective_date": null,
     "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Acts%20No.%202%20of%202025%2C%20The%20Geological%20Minerals%20Development.pdf",
     "filename": "zambia_geological_minerals_development_act_2025.pdf",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "licensing_committee_results_june_2026",
@@ -113,7 +122,8 @@
     "effective_date": null,
     "url": "https://www.mmmd.gov.zm/?p=6561",
     "filename": "zambia_licensing_committee_results_june_2026.html",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "mining_fees_area_charges_2024",
@@ -129,7 +139,8 @@
     ],
     "url": "https://www.mmmd.gov.zm/wp-content/uploads/2024/09/PRESCRIBED-APPLICATION-FEES-AND-AREA-CHARGES-New.pdf",
     "filename": "zambia_mining_fees_area_charges_2024.pdf",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "usgs_zambia_minerals_yearbook_2024",
@@ -140,7 +151,8 @@
     "url": "https://www.usgs.gov/centers/national-minerals-information-center/zambia",
     "filename": "zambia_usgs_minerals_yearbook_2024.html",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "international_official"
   },
   {
     "id": "world_mining_data_2026",
@@ -151,7 +163,8 @@
     "url": "https://www.bmf.gv.at/dam/jcr:b778238b-9952-4fee-84ab-f3293b00c4e9/WMD2026.pdf?reftype=.pdf",
     "filename": "world_mining_data_2026.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "international_official"
   },
   {
     "id": "zamstats_monthly_bulletin_september_2026",
@@ -162,7 +175,8 @@
     "url": "https://www.zamstats.gov.zm/wp-content/uploads/2026/09/Vol-282-of-2026-The-Monthly-September-Flnal.pdf",
     "filename": "zambia_zamstats_monthly_bulletin_september_2026.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "zamstats_monthly_bulletin_august_2026",
@@ -173,7 +187,8 @@
     "url": "https://www.zamstats.gov.zm/wp-content/uploads/2026/09/Vol-281-of-2026-The-Monthly-August-08_09_26.pdf",
     "filename": "zambia_zamstats_monthly_bulletin_august_2026.pdf",
     "status": "current",
-    "enabled": true
+    "enabled": true,
+    "source_authority": "government"
   },
   {
     "id": "licensing_committee_results_september_2026",
@@ -188,20 +203,22 @@
     "published_date": "2026-10-10",
     "effective_date": "2026-09-28",
     "superseded_by": null,
-    "supersedes": []
+    "supersedes": [],
+    "source_authority": "government"
   },
-{
-  "id": "shuka_kabwe_drilling_kbdd06_11_als_october_2026",
-  "title": "Kabwe Drilling KBDD06-11 - Drilling Results from ALS Laboratories",
-  "agency": "Shuka Minerals Plc",
-  "document_type": "exploration_results",
-  "source_type": "html",
-  "status": "current",
-  "url": "https://www.shukaminerals.com/post/kabwe-drilling-kbdd06-11-drilling-results-from-als-laboratories",
-  "filename": "shuka_kabwe_drilling_kbdd06_11_als_october_2026.html",
-  "published_date": "2026-10-16",
-  "effective_date": "2026-10-16",
-  "superseded_by": null,
-  "supersedes": []
-}
+  {
+    "id": "shuka_kabwe_drilling_kbdd06_11_als_october_2026",
+    "title": "Kabwe Drilling KBDD06-11 - Drilling Results from ALS Laboratories",
+    "agency": "Shuka Minerals Plc",
+    "document_type": "exploration_results",
+    "source_type": "html",
+    "status": "current",
+    "url": "https://www.shukaminerals.com/post/kabwe-drilling-kbdd06-11-drilling-results-from-als-laboratories",
+    "filename": "shuka_kabwe_drilling_kbdd06_11_als_october_2026.html",
+    "published_date": "2026-10-16",
+    "effective_date": "2026-10-16",
+    "superseded_by": null,
+    "supersedes": [],
+    "source_authority": "company_disclosure"
+  }
 ]

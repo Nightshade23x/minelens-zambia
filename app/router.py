@@ -1004,28 +1004,20 @@ def preferred_document_source_ids(
     chunks: list[dict],
 ) -> set[str]:
     """
-    Select authoritative application/requirements sources
-    for clear mining-right requirement questions.
+    Select authoritative document sources for strong,
+    well-defined documentary intents.
 
     Explicitly named documents are handled separately and
     retain higher priority.
+
+    Currently this supports:
+    - prescribed mining-right fees / area charges
+    - mining-right application requirements
     """
 
     normalized = normalize_query(
         query
     )
-
-    if not contains_any(
-        normalized,
-        MINING_RIGHT_REQUIREMENT_TERMS,
-    ):
-        return set()
-
-    if not contains_any(
-        normalized,
-        MINING_RIGHT_CONTEXT_TERMS,
-    ):
-        return set()
 
     available_source_ids = {
         chunk_source_id(
@@ -1037,10 +1029,83 @@ def preferred_document_source_ids(
         )
     }
 
-    return (
-        MINING_RIGHT_REQUIREMENT_SOURCE_IDS
-        & available_source_ids
+    preferred: set[
+        str
+    ] = set()
+
+    # -----------------------------------------------------
+    # Prescribed fees / area charges
+    # -----------------------------------------------------
+
+    fee_terms = (
+        "fee",
+        "fees",
+        "application fee",
+        "application fees",
+        "area charge",
+        "area charges",
     )
+
+    fee_context_terms = (
+        "mining right",
+        "mining rights",
+        "mining licence",
+        "mining license",
+        "exploration licence",
+        "exploration license",
+        "mineral processing licence",
+        "mineral processing license",
+        "large-scale",
+        "large scale",
+        "small-scale",
+        "small scale",
+        "artisanal",
+        "area charge",
+        "area charges",
+    )
+
+    if (
+        contains_any(
+            normalized,
+            fee_terms,
+        )
+        and contains_any(
+            normalized,
+            fee_context_terms,
+        )
+    ):
+        fee_source_ids = {
+            "mining_fees_area_charges_2024"
+        }
+
+        preferred.update(
+            fee_source_ids
+            & available_source_ids
+        )
+
+    # -----------------------------------------------------
+    # Mining-right requirements
+    # -----------------------------------------------------
+
+    if (
+        contains_any(
+            normalized,
+            MINING_RIGHT_REQUIREMENT_TERMS,
+        )
+        and contains_any(
+            normalized,
+            MINING_RIGHT_CONTEXT_TERMS,
+        )
+    ):
+        preferred.update(
+            MINING_RIGHT_REQUIREMENT_SOURCE_IDS
+            & available_source_ids
+        )
+
+    return preferred
+
+
+
 
 
 # ---------------------------------------------------------

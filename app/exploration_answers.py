@@ -108,7 +108,38 @@ def exploration_source(
             )
         ),
         "agency": (
-            "Shuka Minerals Plc"
+            clean_text(
+                first.get(
+                    "agency"
+                )
+            )
+            or "Shuka Minerals Plc"
+        ),
+
+        "source_authority": (
+            clean_text(
+                first.get(
+                    "source_authority"
+                )
+            )
+            or "company_disclosure"
+        ),
+
+        "canonical_source_id": (
+            clean_text(
+                first.get(
+                    "canonical_source_id"
+                )
+            )
+        ),
+
+        "document_type": (
+            clean_text(
+                first.get(
+                    "document_type"
+                )
+            )
+            or "exploration_results"
         ),
     }
 

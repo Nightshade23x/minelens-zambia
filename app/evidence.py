@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import json
+from functools import lru_cache
+from pathlib import Path
+
+
 from typing import Any
 
 
@@ -15,6 +20,208 @@ EXPANDED_MAX_TEXT_CHARS = 5000
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
+
+
+ROOT_DIR = (
+    Path(__file__)
+    .resolve()
+    .parents[1]
+)
+
+SOURCES_CONFIG_PATH = (
+    ROOT_DIR
+    / "config"
+    / "sources.json"
+)
+
+
+@lru_cache(
+    maxsize=1,
+)
+def load_source_registry() -> dict[str, dict]:
+    """
+    Load MineLens source metadata by canonical source id.
+
+    This lets evidence created from older processed files
+    inherit newer metadata such as source_authority without
+    requiring immediate re-ingestion.
+    """
+
+    if not SOURCES_CONFIG_PATH.exists():
+        return {}
+
+    sources = json.loads(
+        SOURCES_CONFIG_PATH.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    return {
+        str(
+            source.get(
+                "id",
+                "",
+            )
+        ).strip():
+            source
+        for source in sources
+        if source.get(
+            "id"
+        )
+    }
+
+
+def canonical_source_id_from_result(
+    result: dict,
+) -> str:
+    """
+    Recover the config/sources.json id from a raw
+    retrieval result.
+    """
+
+    candidates = [
+        result,
+        result.get(
+            "chunk",
+            {},
+        ),
+        result.get(
+            "record",
+            {},
+        ),
+    ]
+
+    for candidate in candidates:
+
+        if not isinstance(
+            candidate,
+            dict,
+        ):
+            continue
+
+        value = (
+            candidate.get(
+                "canonical_source_id"
+            )
+            or candidate.get(
+                "source_id"
+            )
+        )
+
+        if not value:
+            continue
+
+        value = str(
+            value
+        ).strip()
+
+        # S1, S2, ... are answer citation ids,
+        # not canonical registry ids.
+        if (
+            value.startswith(
+                "S"
+            )
+            and value[
+                1:
+            ].isdigit()
+        ):
+            continue
+
+        return value
+
+    # Fallback: identify the configured source by URL.
+    source_url = ""
+
+    for candidate in candidates:
+
+        if not isinstance(
+            candidate,
+            dict,
+        ):
+            continue
+
+        source_url = str(
+            candidate.get(
+                "source_url",
+                "",
+            )
+        ).strip()
+
+        if source_url:
+            break
+
+    if source_url:
+
+        for (
+            source_id,
+            metadata,
+        ) in load_source_registry().items():
+
+            if (
+                str(
+                    metadata.get(
+                        "url",
+                        "",
+                    )
+                ).strip()
+                == source_url
+            ):
+                return source_id
+
+    return ""
+
+
+def enrich_evidence_source_metadata(
+    item: dict,
+    result: dict,
+) -> dict:
+    """
+    Attach canonical source metadata to normalized evidence.
+    """
+
+    canonical_source_id = (
+        canonical_source_id_from_result(
+            result
+        )
+    )
+
+    if not canonical_source_id:
+        return item
+
+    metadata = (
+        load_source_registry().get(
+            canonical_source_id,
+            {},
+        )
+    )
+
+    item[
+        "canonical_source_id"
+    ] = canonical_source_id
+
+    for key in (
+        "agency",
+        "source_authority",
+        "document_type",
+        "source_type",
+    ):
+
+        if (
+            not item.get(
+                key
+            )
+            and metadata.get(
+                key
+            )
+        ):
+            item[
+                key
+            ] = metadata[
+                key
+            ]
+
+    return item
+
 
 def clean_text(
     value: Any,
@@ -1042,6 +1249,11 @@ def normalize_evidence(
                 f"{route}"
             )
 
+        item = enrich_evidence_source_metadata(
+            item=item,
+            result=result,
+        )
+
         evidence.append(
             item
         )
@@ -1213,31 +1425,55 @@ def evidence_sources(
 
         sources.append(
             {
-                "source_id": (
+                "source_id":
                     item.get(
                         "source_id"
-                    )
-                ),
-                "title": (
+                    ),
+
+                "canonical_source_id":
+                    item.get(
+                        "canonical_source_id"
+                    ),
+
+                "title":
                     item.get(
                         "title"
-                    )
-                ),
-                "document": (
+                    ),
+
+                "document":
                     item.get(
                         "document"
-                    )
-                ),
-                "pages": (
+                    ),
+
+                "pages":
                     item.get(
                         "pages"
-                    )
-                ),
-                "source_url": (
+                    ),
+
+                "source_url":
                     item.get(
                         "source_url"
-                    )
-                ),
+                    ),
+
+                "published_date":
+                    item.get(
+                        "published_date"
+                    ),
+
+                "agency":
+                    item.get(
+                        "agency"
+                    ),
+
+                "source_authority":
+                    item.get(
+                        "source_authority"
+                    ),
+
+                "document_type":
+                    item.get(
+                        "document_type"
+                    ),
             }
         )
 

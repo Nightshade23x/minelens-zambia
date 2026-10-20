@@ -8,6 +8,7 @@ from frontend.utils.display import (
     clean_text,
     friendly_source_title,
     source_agency,
+    source_authority_label,
 )
 
 
@@ -15,7 +16,7 @@ def display_source(
     source: dict,
 ) -> None:
     """
-    Render one official MineLens source card.
+    Render one MineLens source card.
     """
 
     source_id = clean_text(
@@ -28,6 +29,12 @@ def display_source(
 
     agency = source_agency(
         source
+    )
+
+    authority_label = (
+        source_authority_label(
+            source
+        )
     )
 
     document = clean_text(
@@ -57,6 +64,11 @@ def display_source(
             f"**{header}**"
         )
 
+        if authority_label:
+            st.caption(
+                authority_label
+            )
+
         if agency:
             st.caption(
                 agency
@@ -65,9 +77,24 @@ def display_source(
         details: list[str] = []
 
         if document:
-            details.append(
-                Path(document).name
+
+            document_name = (
+                Path(
+                    document
+                ).name
             )
+
+            if (
+                clean_text(
+                    document_name
+                ).casefold()
+                != clean_text(
+                    title
+                ).casefold()
+            ):
+                details.append(
+                    document_name
+                )
 
         if pages:
             details.append(
@@ -83,7 +110,7 @@ def display_source(
 
         if source_url:
             st.link_button(
-                "View official source",
+                "View source",
                 source_url,
             )
 
@@ -92,7 +119,7 @@ def display_sources(
     sources: list[dict],
 ) -> None:
     """
-    Render the complete official sources section.
+    Render the complete MineLens sources section.
     """
 
     if not sources:

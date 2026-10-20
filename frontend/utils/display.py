@@ -246,6 +246,99 @@ def friendly_source_title(
     return "Official source"
 
 
+
+def source_authority(
+    source: dict,
+) -> str:
+    """
+    Return the canonical authority class for a source.
+
+    Explicit metadata is preferred. Agency inference is
+    used as a backward-compatible fallback for older
+    source objects.
+    """
+
+    explicit = clean_text(
+        source.get(
+            "source_authority"
+        )
+    )
+
+    if explicit:
+        return explicit
+
+    agency = source_agency(
+        source
+    ).casefold()
+
+    title = clean_text(
+        source.get(
+            "title"
+        )
+        or source.get(
+            "document"
+        )
+    ).casefold()
+
+    if (
+        "shuka minerals"
+        in agency
+        or "shuka minerals"
+        in title
+    ):
+        return (
+            "company_disclosure"
+        )
+
+    international_markers = (
+        "u.s. geological survey",
+        "us geological survey",
+        "austrian federal ministry",
+    )
+
+    if any(
+        marker in agency
+        for marker
+        in international_markers
+    ):
+        return (
+            "international_official"
+        )
+
+    return "government"
+
+
+def source_authority_label(
+    source: dict,
+) -> str:
+    """
+    Human-readable authority label.
+    """
+
+    labels = {
+        "government":
+            "Government source",
+
+        "international_official":
+            "International official source",
+
+        "company_disclosure":
+            "Company technical disclosure",
+    }
+
+    authority = source_authority(
+        source
+    )
+
+    return labels.get(
+        authority,
+        authority.replace(
+            "_",
+            " ",
+        ).title(),
+    )
+
+
 def source_agency(
     source: dict,
 ) -> str:
