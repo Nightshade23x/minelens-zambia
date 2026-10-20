@@ -32,3 +32,4 @@ Thumbs.db
 
 # Local evaluation/debug logs
 logs/
+debug/
