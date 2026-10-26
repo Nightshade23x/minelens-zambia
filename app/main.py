@@ -330,6 +330,16 @@ def main() -> None:
 
         
 
+    # Structured mining statistics answers
+    if result.get("route") == "mining_statistics":
+        from app.mining_statistics import answer_statistics_result
+
+        answer_result = answer_statistics_result(
+            search_result=result,
+        )
+        display_answer(answer_result)
+        return
+
     # -----------------------------------------------------
     # Evidence normalization
     # -----------------------------------------------------
@@ -347,6 +357,12 @@ def main() -> None:
             args.evidence_k
         )
 
+        if result.get("route") == ROUTE_DOCUMENTS:
+            effective_evidence_k = max(
+                effective_evidence_k,
+                5,
+            )
+
         if result.get(
             "preferred_source_ids"
         ):
@@ -360,6 +376,20 @@ def main() -> None:
             max_evidence=(
                 effective_evidence_k
             ),
+        )
+
+    # -----------------------------------------------------
+    # Query-focused document evidence selection
+    # -----------------------------------------------------
+
+    if result.get("route") == "documents":
+        from app.document_answer_selection import (
+            select_document_answer_evidence,
+        )
+
+        evidence = select_document_answer_evidence(
+            question=query,
+            evidence=evidence,
         )
 
     # -----------------------------------------------------

@@ -90,6 +90,15 @@ Rules:
     unspecified merely because the source describes the items
     as actions or capabilities rather than using exactly the
     same wording as the question.
+
+14. Tables extracted from PDFs may appear as continuous text.
+    When answering a table-based list question, identify every
+    relevant row, including rows near the end of the table.
+    Do not omit entries because the table lacks line breaks.
+15. Preserve distinctions between approximate values, exact
+    values and inequalities. If multiple supplied passages
+    report different estimates, explain the differences and
+    cite their respective evidence sources.
 """.strip()
 
 
@@ -3249,13 +3258,6 @@ def answer_from_evidence(
         return (
             critical_minerals_answer
         )
-    if is_list_query(
-        question
-    ):
-
-        evidence = evidence[
-            :1
-    ]
     return generate_ollama_answer(
         question=question,
         evidence=evidence,

@@ -890,6 +890,44 @@ def route_query(
             ),
         }
 
+    # Explicit facility-category language.
+    #
+    # This catches queries such as:
+    # - zinc facilities in Zambia
+    # - copper mines in Zambia
+    # - cobalt smelters
+    # - processing plants in Copperbelt
+    #
+    # More specific routes above retain priority.
+    explicit_facility_terms = (
+        "facility",
+        "facilities",
+        "mine",
+        "mines",
+        "smelter",
+        "smelters",
+        "refinery",
+        "refineries",
+        "processing plant",
+        "processing plants",
+    )
+
+    if (
+        not licensing_context
+        and contains_any(
+            normalized,
+            explicit_facility_terms,
+        )
+    ):
+        return {
+            "route": ROUTE_FACILITIES,
+            "reason": (
+                "The query explicitly asks about "
+                "mines, plants, smelters, refineries "
+                "or other structured mineral facilities."
+            ),
+        }
+
     return {
         "route": ROUTE_DOCUMENTS,
         "reason": (
@@ -1329,6 +1367,84 @@ def document_precision_score(
 
             if numeric_match:
                 score += 4.0
+
+    # Additional query-specific evidence signals.
+
+    # Reward explicitly named entities such as mining projects.
+    named_entities = {
+        name.casefold()
+        for name in re.findall(
+            r"\b[A-Z][a-z]{3,}\b",
+            query,
+        )
+        if name.casefold() not in {
+            "what", "which", "where", "when",
+            "how", "zambia",
+        }
+    }
+
+    for entity in named_entities:
+        if entity in searchable_tokens:
+            score += 6.0
+
+    # Reward requested years when they appear near
+    # investment-related language.
+    query_years = {
+        token
+        for token in query_tokens
+        if re.fullmatch(r"(19|20)\d{2}", token)
+    }
+
+    financial_terms = {
+        "investment", "investments",
+        "required", "requirements",
+        "expenditure", "capital", "cost",
+    }
+
+    tokens = re.findall(
+        r"[a-z0-9]+",
+        searchable,
+    )
+
+    for year in query_years:
+        positions = [
+            index
+            for index, token in enumerate(tokens)
+            if token == year
+        ]
+
+        if any(
+            financial_terms.intersection(
+                tokens[
+                    max(0, pos - 12):pos + 13
+                ]
+            )
+            for pos in positions
+        ):
+            score += 4.0
+
+    # Prefer explicit totals for quantitative questions,
+    # provided the chunk matches the requested subject.
+    quantitative_query = (
+        "how much" in query_normalized
+        or "total" in query_tokens
+    )
+
+    financial_query = bool(
+        financial_terms.intersection(
+            query_tokens
+        )
+    )
+
+    if quantitative_query and financial_query:
+        if re.search(
+            r"\btotal\s+"
+            r"(?:US\$|\$)?\s*"
+            r"\d+(?:\.\d+)?",
+            raw_text,
+            re.IGNORECASE,
+        ):
+            score += 4.0
 
     return score
 

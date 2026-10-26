@@ -735,6 +735,33 @@ def infer_statistics_intent(
         return "world_rank"
 
 
+    # Explicit supported year ranges represent trends,
+    # even without words such as 'trend' or 'change'.
+    supported_year = r"20(?:20|21|22|23|24)"
+
+    range_patterns = [
+        rf"\bfrom\s+({supported_year})\s+"
+        rf"(?:to|through)\s+({supported_year})\b",
+        rf"\bbetween\s+({supported_year})\s+"
+        rf"and\s+({supported_year})\b",
+        rf"\b({supported_year})\s*[-\u2013\u2014]\s*"
+        rf"({supported_year})\b",
+    ]
+
+    for pattern in range_patterns:
+        match = re.search(
+            pattern,
+            query,
+            flags=re.IGNORECASE,
+        )
+
+        if match is not None:
+            start_year = int(match.group(1))
+            end_year = int(match.group(2))
+
+            if start_year <= end_year:
+                return "trend"
+
     if any(
         term in normalized
         for term in TREND_TERMS

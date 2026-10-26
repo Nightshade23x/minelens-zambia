@@ -220,5 +220,20 @@
     "superseded_by": null,
     "supersedes": [],
     "source_authority": "company_disclosure"
+  },
+  {
+    "id": "zambia_metals_minerals_country_compact_2026",
+    "title": "Zambia Metals and Minerals Country Compact",
+    "agency": "World Bank Group and Ministry of Mines and Minerals Development",
+    "document_type": "country_compact",
+    "source_type": "pdf",
+    "status": "current",
+    "url": "https://www.worldbank.org/content/dam/theworldbankgroupasset/img/2026/479200_003_Zambia%20MM%20Country%20Compact_Final.pdf",
+    "filename": "zambia_metals_minerals_country_compact_2026.pdf",
+    "published_date": "2026-10-16",
+    "effective_date": null,
+    "superseded_by": null,
+    "supersedes": [],
+    "source_authority": "international_official"
   }
 ]
