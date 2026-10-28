@@ -44,51 +44,55 @@ def render_sidebar() -> dict:
         )
 
         st.caption(
-            "Search configuration"
+            "Evidence-grounded mining intelligence"
         )
 
         st.divider()
 
-        models, model_error = (
-            installed_models()
-        )
+        with st.expander(
+            "Search settings",
+            expanded=False,
+        ):
+            models, model_error = (
+                installed_models()
+            )
 
-        model_options = [
-            "Auto"
-        ]
+            model_options = [
+                "Auto"
+            ]
 
-        model_options.extend(
-            models
-        )
+            model_options.extend(
+                models
+            )
 
-        selected_model = st.selectbox(
-            "Answer model",
-            options=model_options,
-            index=0,
-            help=(
-                "Auto uses MineLens' preferred "
-                "local Ollama model when a language "
-                "model is required."
-            ),
-        )
+            selected_model = st.selectbox(
+                "Answer model",
+                options=model_options,
+                index=0,
+                help=(
+                    "Auto uses MineLens' preferred "
+                    "local Ollama model when a language "
+                    "model is required."
+                ),
+            )
 
-        route_choice = st.selectbox(
-            "Search route",
-            options=[
-                "Auto",
-                "Documents",
-                "Licensing",
-                "Mining Statistics",
-                "Facilities",
-            ],
-            index=0,
-            help=(
-                "Auto lets MineLens choose between "
-                "documents, licensing records, "
-                "mining statistics and facility "
-                "intelligence."
-            ),
-        )
+            route_choice = st.selectbox(
+                "Search route",
+                options=[
+                    "Auto",
+                    "Documents",
+                    "Licensing",
+                    "Mining Statistics",
+                    "Facilities",
+                ],
+                index=0,
+                help=(
+                    "Auto lets MineLens choose between "
+                    "documents, licensing records, "
+                    "mining statistics and facility "
+                    "intelligence."
+                ),
+            )
 
         with st.expander(
             "Advanced retrieval",

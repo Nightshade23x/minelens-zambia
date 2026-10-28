@@ -371,21 +371,9 @@ show_raw = (
 # =========================================================
 
 
-st.markdown(
-    (
-        '<div class="example-text">'
-        'Examples: '
-        'large-scale mining licence fee · '
-        '42553-HQ-LML · '
-        "Zambia's critical minerals · "
-        'goal of the National Critical Minerals Strategy'
-        '</div>'
-    ),
-    unsafe_allow_html=True,
-)
-
-
-
+def fill_example_query(value: str) -> None:
+    st.session_state["query_input"] = value
+    st.session_state["last_result"] = None
 
 
 with st.form(
@@ -474,10 +462,97 @@ with st.form(
 
 if clear_clicked:
 
-    st.stop()
+    st.rerun()
 
 
 
+
+
+# Homepage content below the search form.
+if (
+    not submitted
+    and st.session_state.get("last_result") is None
+):
+    st.markdown("#### Try a question")
+
+    example_questions = [
+        (
+            "Advanced mining projects",
+            "Which mining projects are at advanced development in Zambia?",
+        ),
+        (
+            "Mining licence fees",
+            "What is the large-scale mining licence fee?",
+        ),
+        (
+            "Copper production trends",
+            "Zambia copper production from 2020 to 2024",
+        ),
+        (
+            "Mine operators",
+            "Who operates Kansanshi Mine?",
+        ),
+    ]
+
+    left, right = st.columns(2)
+
+    for index, (label, question) in enumerate(example_questions):
+        column = left if index % 2 == 0 else right
+
+        with column:
+            st.button(
+                label,
+                key=f"example_question_{index}",
+                use_container_width=True,
+                on_click=fill_example_query,
+                args=(question,),
+            )
+
+    st.divider()
+
+    st.subheader("Explore the data")
+    st.caption(
+        "Access the MineLens data explorers."
+    )
+
+    explorers = [
+        (
+            "Licensing Explorer",
+            "pages/1_Licensing_Explorer.py",
+            "Browse mining licence applications and decisions.",
+        ),
+        (
+            "Applicant Explorer",
+            "pages/2_Applicant_Explorer.py",
+            "Explore companies and their licensing activity.",
+        ),
+        (
+            "Document Explorer",
+            "pages/3_Document_Explorer.py",
+            "Search official mining publications.",
+        ),
+        (
+            "Commodity Explorer",
+            "pages/4_Commodity_Explorer.py",
+            "Analyze mineral commodities and licensing activity.",
+        ),
+        (
+            "Location Explorer",
+            "pages/5_Location_Explorer.py",
+            "Explore province and district-level mining activity.",
+        ),
+    ]
+
+    columns = st.columns(3)
+
+    for index, (label, page, description) in enumerate(explorers):
+        with columns[index % 3]:
+            with st.container(border=True):
+                st.page_link(
+                    page,
+                    label=label,
+                )
+                st.caption(description)
 
 
 # =========================================================
@@ -892,8 +967,33 @@ if result_state:
             border=True,
         ):
 
-            st.markdown(
-                frontend_answer
+            answer_lines = (
+                frontend_answer.rstrip().splitlines()
+            )
+
+            if len(answer_lines) > 1:
+                last_line = answer_lines[-1].strip()
+
+                is_source_id = (
+                    last_line.startswith("[S")
+                    and last_line.endswith("]")
+                    and last_line[2:-1].isdigit()
+                )
+
+                preceding = "\n".join(
+                    answer_lines[:-1]
+                ).rstrip()
+
+                if is_source_id and last_line in preceding:
+                    frontend_answer = preceding
+
+            st.markdown(frontend_answer)
+
+        with st.popover("Copy answer"):
+            st.code(
+                frontend_answer,
+                language=None,
+                wrap_lines=True,
             )
 
     # =====================================================
@@ -917,117 +1017,51 @@ if result_state:
             )
         )
 
-    metadata_1, metadata_2, metadata_3 = (
-        st.columns(
-            [1, 1, 1.25]
+    # Compact technical details, hidden by default.
+    if route_info.get("route") in {
+        ROUTE_MINING_STATISTICS,
+        ROUTE_FACILITIES,
+    }:
+        count_label = "Records"
+        count_value = len(
+            search_result.get("results", [])
         )
-    )
+    else:
+        count_label = "Evidence sources"
+        count_value = len(evidence)
 
-    with metadata_1:
-
-        with st.container(
-            border=True,
-        ):
-
-            st.metric(
-                "Search route",
-                route_label(
-                    route_info[
-                        "route"
-                    ]
-                ),
-            )
-
-    with metadata_2:
-
-        with st.container(
-            border=True,
-        ):
-
-            if (
-                route_info.get(
-                    "route"
-                )
-                in {
-                    ROUTE_MINING_STATISTICS,
-                    ROUTE_FACILITIES,
-                }
-            ):
-
-                count_label = (
-                    "Records"
-                )
-
-                count_value = len(
-                    search_result.get(
-                        "results",
-                        [],
-                    )
-                )
-
-            else:
-
-                count_label = (
-                    "Evidence"
-                )
-
-                count_value = len(
-                    evidence
-                )
-
-            st.metric(
-                count_label,
-                count_value,
-            )
-
-    with metadata_3:
-
-        with st.container(
-            border=True,
-        ):
-
-            st.metric(
-                "Answer mode",
-                generation_label(
-                    generation_method
-                ),
-            )
-
-    st.caption(
-        route_info.get(
-            "reason",
-            "",
-        )
-    )
-
-    if model_name:
-
-        st.caption(
-            f"Local model: "
-            f"{model_name}"
-        )
-
-    elif answer_result:
-
-        st.caption(
-            "Language model not required "
-            "for this answer."
-        )
-
-    # =====================================================
-    # DOCUMENT EVIDENCE
-    # =====================================================
-
-    if (
-        route_info.get(
-            "route"
-        )
-        == ROUTE_DOCUMENTS
+    with st.expander(
+        "Search details",
+        expanded=False,
     ):
-
-        display_document_evidence(
-            evidence
+        st.markdown(
+            "**Search route:** "
+            + route_label(route_info["route"])
         )
+
+        st.markdown(
+            f"**{count_label}:** {count_value}"
+        )
+
+        st.markdown(
+            "**Answer mode:** "
+            + generation_label(generation_method)
+        )
+
+        reason = route_info.get("reason", "")
+
+        if reason:
+            st.caption(reason)
+
+        if model_name:
+            st.caption(
+                f"Local model: {model_name}"
+            )
+        elif answer_result:
+            st.caption(
+                "Language model not required "
+                "for this answer."
+            )
 
     # =====================================================
     # MINING STATISTICS
@@ -1198,9 +1232,65 @@ if result_state:
             for item in evidence
         ]
 
-    display_sources(
-        sources
-    )
+    # Combined references, collapsed by default.
+    document_evidence = [
+        item
+        for item in evidence
+        if item.get("evidence_type") == "document"
+    ]
+
+    if sources or document_evidence:
+        with st.expander(
+            "Sources and supporting evidence",
+            expanded=False,
+        ):
+            st.caption(
+                f"{len(sources)} cited source(s) ? "
+                f"{len(document_evidence)} document excerpt(s)"
+            )
+
+            if sources:
+                display_sources(sources)
+
+            if document_evidence:
+                st.markdown("#### Supporting excerpts")
+
+                for item in document_evidence:
+                    source_id = str(
+                        item.get("source_id") or ""
+                    ).strip()
+
+                    title = str(
+                        item.get("title")
+                        or item.get("document")
+                        or "Document"
+                    ).strip()
+
+                    pages = str(
+                        item.get("pages") or ""
+                    ).strip()
+
+                    excerpt = str(
+                        item.get("text") or ""
+                    ).strip()
+
+                    with st.container(border=True):
+                        label = (
+                            f"[{source_id}] {title}"
+                            if source_id
+                            else title
+                        )
+
+                        st.markdown(f"**{label}**")
+
+                        if pages:
+                            st.caption(f"Pages {pages}")
+
+                        st.markdown(
+                            excerpt
+                            or "No text excerpt is available."
+                        )
+
 
     # =====================================================
     # DEBUG / RETRIEVAL DETAILS
