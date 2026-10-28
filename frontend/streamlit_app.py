@@ -625,6 +625,14 @@ if submitted:
                         5,
                     )
 
+                # Document questions need enough candidates
+                # for query-focused evidence selection.
+                if search_result.get("route") == ROUTE_DOCUMENTS:
+                    effective_evidence_k = max(
+                        effective_evidence_k,
+                        5,
+                    )
+
                 # Structured exploration answers should use
                 # the same result set displayed in the table.
                 if (
@@ -647,6 +655,17 @@ if submitted:
                     search_result=search_result,
                     max_evidence=effective_evidence_k,
                 )
+
+                # Keep document answers consistent with the CLI.
+                if search_result.get("route") == ROUTE_DOCUMENTS:
+                    from app.document_answer_selection import (
+                        select_document_answer_evidence,
+                    )
+
+                    evidence = select_document_answer_evidence(
+                        question=query,
+                        evidence=evidence,
+                    )
 
         except Exception as error:
 
