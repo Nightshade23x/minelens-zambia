@@ -534,10 +534,31 @@ for key, group in matching_groups:
     ] = group
 
 
+if search_query.strip():
+    st.caption(
+        f"{len(matching_groups):,} applicants match the search."
+    )
+
 selected_label = st.selectbox(
     "Select applicant",
     options=option_labels,
+    index=0 if len(option_labels) == 1 else None,
+    placeholder="Choose an applicant...",
 )
+
+if selected_label is None:
+    st.caption(
+        "Search for a company or select an applicant "
+        "to view its licensing profile."
+    )
+
+    with st.expander(
+        "Browse applicant rankings",
+        expanded=False,
+    ):
+        display_applicant_rankings(records)
+
+    st.stop()
 
 
 selected_group = (
@@ -670,139 +691,9 @@ with profile_metric_3:
 with profile_metric_4:
 
     st.metric(
-        "Top commodity",
-        (
-            f"{top_commodity_name} "
-            f"({top_commodity_count:,})"
-        ),
+        "Approval rate",
+        f"{approved / len(applicant_records) * 100:.1f}%",
     )
-
-
-# =========================================================
-# DECISION PROFILE
-# =========================================================
-
-st.markdown(
-    "### Decision profile"
-)
-
-
-decision_1, decision_2, decision_3 = (
-    st.columns(
-        3
-    )
-)
-
-
-with decision_1:
-
-    st.metric(
-        "Approved",
-        approved,
-    )
-
-
-with decision_2:
-
-    st.metric(
-        "Deferred",
-        deferred,
-    )
-
-
-with decision_3:
-
-    st.metric(
-        "Rejected",
-        rejected,
-    )
-
-
-# =========================================================
-# FOOTPRINT
-# =========================================================
-
-st.markdown(
-    "### Geographic and commodity footprint"
-)
-
-
-footprint_1, footprint_2, footprint_3 = (
-    st.columns(
-        3
-    )
-)
-
-
-with footprint_1:
-
-    st.metric(
-        "Provinces",
-        len(
-            province_set
-        ),
-    )
-
-    if province_set:
-
-        st.caption(
-            ", ".join(
-                sorted(
-                    province_set
-                )
-            )
-        )
-
-
-with footprint_2:
-
-    st.metric(
-        "Districts",
-        len(
-            district_set
-        ),
-    )
-
-    if district_set:
-
-        st.caption(
-            ", ".join(
-                sorted(
-                    district_set
-                )
-            )
-        )
-
-
-with footprint_3:
-
-    st.metric(
-        "Commodities",
-        len(
-            commodity_set
-        ),
-    )
-
-    if commodity_set:
-
-        st.caption(
-            ", ".join(
-                sorted(
-                    commodity_set
-                )
-            )
-        )
-
-
-# =========================================================
-# MAP
-# =========================================================
-
-st.divider()
-
-display_licensing_map(
-    applicant_records
-)
 
 
 # =========================================================
@@ -1102,12 +993,145 @@ st.download_button(
     ),
     mime="text/csv",
 )
+
+
+# =========================================================
+# DECISION PROFILE
+# =========================================================
+
+st.markdown(
+    "### Decision profile"
+)
+
+
+decision_1, decision_2, decision_3 = (
+    st.columns(
+        3
+    )
+)
+
+
+with decision_1:
+
+    st.metric(
+        "Approved",
+        approved,
+    )
+
+
+with decision_2:
+
+    st.metric(
+        "Deferred",
+        deferred,
+    )
+
+
+with decision_3:
+
+    st.metric(
+        "Rejected",
+        rejected,
+    )
+
+
+# =========================================================
+# FOOTPRINT
+# =========================================================
+
+st.markdown(
+    "### Geographic and commodity footprint"
+)
+
+
+footprint_1, footprint_2, footprint_3 = (
+    st.columns(
+        3
+    )
+)
+
+
+with footprint_1:
+
+    st.metric(
+        "Provinces",
+        len(
+            province_set
+        ),
+    )
+
+    if province_set:
+
+        st.caption(
+            ", ".join(
+                sorted(
+                    province_set
+                )
+            )
+        )
+
+
+with footprint_2:
+
+    st.metric(
+        "Districts",
+        len(
+            district_set
+        ),
+    )
+
+    if district_set:
+
+        st.caption(
+            ", ".join(
+                sorted(
+                    district_set
+                )
+            )
+        )
+
+
+with footprint_3:
+
+    st.metric(
+        "Commodities",
+        len(
+            commodity_set
+        ),
+    )
+
+    if commodity_set:
+
+        st.caption(
+            ", ".join(
+                sorted(
+                    commodity_set
+                )
+            )
+        )
+
+
+# =========================================================
+# MAP
+# =========================================================
+
+st.divider()
+
+display_licensing_map(
+    applicant_records
+)
+
+
 # =========================================================
 # APPLICANT RANKINGS
 # =========================================================
 
 st.divider()
 
-display_applicant_rankings(
-    records
-)
+with st.expander(
+    "Applicant rankings",
+    expanded=False,
+):
+    display_applicant_rankings(
+        records
+    )

@@ -106,6 +106,11 @@ def _canonical_decision(
     )
 
 
+def canonical_decision(value: str) -> str:
+    """Public decision normalization for UI metrics."""
+    return _canonical_decision(value)
+
+
 # =========================================================
 # COUNTING HELPERS
 # =========================================================

@@ -279,87 +279,81 @@ def _display_comparison_card(
     record: dict,
     heading: str,
 ) -> None:
-    """
-    Render one licence summary card.
-    """
+    """Render a compact licence comparison card."""
 
-    code = _text_value(
-        record,
-        "licence_code",
-    )
+    fields = _field_values(record)
 
-    applicant = _text_value(
-        record,
-        "applicant",
-    )
+    code = fields["Licence code"]
+    applicant = fields["Applicant"]
+    licence_type = fields["Licence type"]
+    decision = fields["Decision"]
 
-    licence_type = _text_value(
-        record,
-        "licence_type",
-    )
+    location_parts = [
+        value
+        for value in (
+            fields["District"],
+            fields["Province"],
+        )
+        if value and value != "?"
+    ]
 
-    decision = _text_value(
-        record,
-        "decision",
-    )
+    location = ", ".join(location_parts) or "?"
+    area = fields["Area"]
+    source_url = _source_url(record)
 
-    province = _text_value(
-        record,
-        "province",
-    )
+    decision_colors = {
+        "approved": "green",
+        "approval": "green",
+        "rejected": "red",
+        "reject": "red",
+        "deferred": "orange",
+        "defer": "orange",
+    }
 
-    districts = _joined_value(
-        record,
-        "districts",
-    )
+    with st.container(border=True):
+        st.caption(heading)
 
-    source_url = _source_url(
-        record
-    )
-
-    with st.container(
-        border=True,
-    ):
-
-        st.caption(
-            heading
+        st.markdown(
+            f"#### {code}"
         )
 
         st.markdown(
-            f"### {code or 'Licence record'}"
+            f"**{applicant}**"
         )
 
-        if applicant:
-            st.markdown(
-                f"**{applicant}**"
+        if licence_type != "?":
+            st.caption(licence_type)
+
+        if decision != "?":
+            color = decision_colors.get(
+                decision.casefold()
             )
 
-        if licence_type:
-            st.caption(
-                licence_type
-            )
+            if color:
+                st.markdown(
+                    f":{color}[**{decision}**]"
+                )
+            else:
+                st.markdown(
+                    f"**{decision}**"
+                )
 
-        _decision_display(
-            decision
-        )
+        st.divider()
 
-        st.markdown(
-            f"**Location**  \n"
-            f"{districts or '—'}, "
-            f"{province or '—'}"
-        )
+        location_col, area_col = st.columns(2)
 
-        st.markdown(
-            f"**Area**  \n"
-            f"{_format_area(record)}"
-        )
+        with location_col:
+            st.caption("Location")
+            st.write(location)
+
+        with area_col:
+            st.caption("Recorded area")
+            st.write(area)
 
         if source_url:
-
             st.link_button(
                 "Official source",
                 source_url,
-                use_container_width=True,
             )
 
 

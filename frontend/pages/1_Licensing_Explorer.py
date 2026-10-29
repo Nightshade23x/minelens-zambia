@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 from frontend.components.licensing_analytics import (
     display_licensing_analytics,
+    canonical_decision,
 )
 from frontend.components.licensing_map import (
     display_licensing_map,
@@ -385,154 +386,75 @@ def record_source_url(
 # LICENCE DETAIL CARD
 # =========================================================
 
-def display_record_card(
-    record: dict,
-) -> None:
-    """
-    Render one structured licence record.
-    """
+def display_record_card(record: dict) -> None:
+    """Display a compact structured licence record."""
 
-    licence_code = text_value(
-        record,
-        "licence_code",
-    )
+    licence_code = text_value(record, "licence_code")
+    applicant = text_value(record, "applicant")
+    decision = text_value(record, "decision")
+    licence_type = text_value(record, "licence_type")
+    province = text_value(record, "province")
+    districts = joined_value(record, "districts")
+    commodities = joined_value(record, "commodities")
+    area_text = text_value(record, "area_text")
+    deadline = text_value(record, "deadline")
+    source_url = record_source_url(record)
 
-    licence_type = text_value(
-        record,
-        "licence_type",
-    )
+    def field(label: str, value: str) -> None:
+        st.caption(label)
+        st.write(value or "?")
 
-    applicant = text_value(
-        record,
-        "applicant",
-    )
+    with st.container(border=True):
 
-    decision = text_value(
-        record,
-        "decision",
-    )
+        header_left, header_right = st.columns([4, 1])
 
-    province = text_value(
-        record,
-        "province",
-    )
-
-    districts = joined_value(
-        record,
-        "districts",
-    )
-
-    commodities = joined_value(
-        record,
-        "commodities",
-    )
-
-    area_text = text_value(
-        record,
-        "area_text",
-    )
-
-    deadline = text_value(
-        record,
-        "deadline",
-    )
-
-    source_url = record_source_url(
-        record
-    )
-
-    with st.container(
-        border=True,
-    ):
-
-        title_column, status_column = (
-            st.columns(
-                [4, 1]
-            )
-        )
-
-        with title_column:
-
+        with header_left:
             st.markdown(
                 f"### {licence_code or 'Licence record'}"
             )
+            st.markdown(
+                f"**{applicant or 'Applicant not recorded'}**"
+            )
 
-            if licence_type:
-                st.caption(
-                    licence_type
+        with header_right:
+            normalized = decision.casefold()
+
+            if normalized in {"approved", "approval"}:
+                st.markdown(f":green[**{decision}**]")
+            elif normalized in {"rejected", "reject"}:
+                st.markdown(f":red[**{decision}**]")
+            elif normalized in {"deferred", "defer"}:
+                st.markdown(f":orange[**{decision}**]")
+            else:
+                st.markdown(
+                    f"**{decision or 'Decision unavailable'}**"
                 )
-
-        with status_column:
-
-            if decision:
-
-                if (
-                    decision.lower()
-                    == "approved"
-                ):
-                    st.success(
-                        decision
-                    )
-
-                elif (
-                    decision.lower()
-                    == "rejected"
-                ):
-                    st.error(
-                        decision
-                    )
-
-                else:
-                    st.info(
-                        decision
-                    )
 
         st.divider()
 
-        left_column, right_column = (
-            st.columns(
-                2
-            )
-        )
+        first_row = st.columns(3)
 
-        with left_column:
+        with first_row[0]:
+            field("Licence type", licence_type)
 
-            st.markdown(
-                f"**Applicant**  \n"
-                f"{applicant or '—'}"
-            )
+        with first_row[1]:
+            field("Province", province)
 
-            st.markdown(
-                f"**Area**  \n"
-                f"{area_text or '—'}"
-            )
+        with first_row[2]:
+            field("District", districts)
 
-            st.markdown(
-                f"**Commodities**  \n"
-                f"{commodities or '—'}"
-            )
+        second_row = st.columns(3)
 
-        with right_column:
+        with second_row[0]:
+            field("Commodities", commodities)
 
-            st.markdown(
-                f"**Province**  \n"
-                f"{province or '—'}"
-            )
+        with second_row[1]:
+            field("Recorded area", area_text)
 
-            st.markdown(
-                f"**District**  \n"
-                f"{districts or '—'}"
-            )
-
-            st.markdown(
-                f"**Stipulated timeframe**  \n"
-                f"{deadline or '—'}"
-            )
+        with second_row[2]:
+            field("Stipulated timeframe", deadline)
 
         if source_url:
-
-            st.divider()
-
             st.link_button(
                 "View official source",
                 source_url,
@@ -733,9 +655,8 @@ total_records = len(
     records
 )
 
-st.metric(
-    "Licensing records",
-    f"{total_records:,}",
+st.caption(
+    f"{total_records:,} licensing records available"
 )
 
 
@@ -823,27 +744,28 @@ with filter_row_1[2]:
     )
 
 
-filter_row_2 = st.columns(
-    2
-)
-
-
-with filter_row_2[0]:
-
-    selected_districts = st.multiselect(
-        "District",
-        options=district_options,
-        key="district_filter",
+with st.expander("Additional filters", expanded=False):
+    filter_row_2 = st.columns(
+        2
     )
 
 
-with filter_row_2[1]:
+    with filter_row_2[0]:
 
-    selected_commodities = st.multiselect(
-        "Commodity",
-        options=commodity_options,
-        key="commodity_filter",
-    )
+        selected_districts = st.multiselect(
+            "District",
+            options=district_options,
+            key="district_filter",
+        )
+
+
+    with filter_row_2[1]:
+
+        selected_commodities = st.multiselect(
+            "Commodity",
+            options=commodity_options,
+            key="commodity_filter",
+        )
 
 
 reset_column, spacer_column = st.columns(
@@ -894,11 +816,9 @@ export_csv = export_dataframe.to_csv(
 # =========================================================
 
 approved_matches = sum(
-    text_value(
-        record,
-        "decision",
-    ).lower()
-    == "approved"
+    canonical_decision(
+        text_value(record, "decision")
+    ) == "Approved"
     for record in filtered_records
 )
 
@@ -970,34 +890,6 @@ with metric_4:
         f"{len(matching_licence_types):,}",
     )
 
-# =========================================================
-# LICENSING ANALYTICS
-# =========================================================
-
-st.divider()
-
-display_licensing_analytics(
-    filtered_records
-)
-# =========================================================
-# LICENSING MAP
-# =========================================================
-
-st.divider()
-
-display_licensing_map(
-    filtered_records,
-    selected_districts=selected_districts,
-)
-# =========================================================
-# PROVINCE SUMMARY
-# =========================================================
-
-st.divider()
-
-display_province_summary(
-    filtered_records
-)
 # =========================================================
 # RESULTS HEADER
 # =========================================================
@@ -1147,15 +1039,6 @@ if (
         f"the remaining matches."
     )
 
-# =========================================================
-# LICENCE COMPARISON
-# =========================================================
-
-st.divider()
-
-display_licence_comparison(
-    filtered_records
-)
 # =========================================================
 # LICENCE DETAILS
 # =========================================================
@@ -1338,3 +1221,43 @@ if selected_record is not None:
                 st.switch_page(
                     "pages/4_Commodity_Explorer.py"
                 )
+
+
+# =========================================================
+# LICENCE COMPARISON
+# =========================================================
+
+st.divider()
+
+display_licence_comparison(
+    filtered_records
+)
+
+# =========================================================
+# LICENSING ANALYTICS
+# =========================================================
+
+st.divider()
+
+display_licensing_analytics(
+    filtered_records
+)
+# =========================================================
+# LICENSING MAP
+# =========================================================
+
+st.divider()
+
+display_licensing_map(
+    filtered_records,
+    selected_districts=selected_districts,
+)
+# =========================================================
+# PROVINCE SUMMARY
+# =========================================================
+
+st.divider()
+
+display_province_summary(
+    filtered_records
+)

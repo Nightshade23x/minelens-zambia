@@ -837,27 +837,28 @@ with filter_row_1[1]:
     )
 
 
-filter_row_2 = st.columns(
-    2
-)
-
-
-with filter_row_2[0]:
-
-    selected_statuses = st.multiselect(
-        "Status",
-        options=status_options,
-        key="document_status_filter",
+with st.expander("Additional filters", expanded=False):
+    filter_row_2 = st.columns(
+        2
     )
 
 
-with filter_row_2[1]:
+    with filter_row_2[0]:
 
-    selected_years = st.multiselect(
-        "Published year",
-        options=year_options,
-        key="document_year_filter",
-    )
+        selected_statuses = st.multiselect(
+            "Status",
+            options=status_options,
+            key="document_status_filter",
+        )
+
+
+    with filter_row_2[1]:
+
+        selected_years = st.multiselect(
+            "Published year",
+            options=year_options,
+            key="document_year_filter",
+        )
 
 
 # =========================================================
@@ -1036,21 +1037,27 @@ selected_rows = (
 
 
 if selected_rows:
-
-    selected_index = (
-        selected_rows[0]
-    )
-
-else:
-
+    selected_index = selected_rows[0]
+elif len(filtered_documents) == 1:
     selected_index = 0
+else:
+    selected_index = None
 
+if selected_index is None:
+    st.caption(
+        "Select a document in the table to inspect "
+        "its details and excerpts."
+    )
+    st.stop()
 
-selected_document = (
-    filtered_documents[
-        selected_index
-    ]
-)
+if not 0 <= selected_index < len(filtered_documents):
+    st.warning(
+        "That selection is no longer available. "
+        "Select a document again."
+    )
+    st.stop()
+
+selected_document = filtered_documents[selected_index]
 
 
 # =========================================================
@@ -1175,16 +1182,28 @@ selected_chunks = (
 )
 
 
-st.caption(
-    f"Showing {len(selected_chunks):,} "
-    f"relevant chunk"
-    f"{'s' if len(selected_chunks) != 1 else ''} "
-    f"from this document."
+if len(selected_chunks) > 10:
+    display_limit = st.selectbox(
+        "Excerpts to display",
+        options=["10", "25", "50", "All"],
+        key="document_excerpt_limit",
+    )
+else:
+    display_limit = "All"
+
+visible_chunks = (
+    selected_chunks
+    if display_limit == "All"
+    else selected_chunks[:int(display_limit)]
 )
 
+st.caption(
+    f"Showing {len(visible_chunks):,} of "
+    f"{len(selected_chunks):,} matching excerpts."
+)
 
 for index, chunk in enumerate(
-    selected_chunks,
+    visible_chunks,
     start=1,
 ):
 
