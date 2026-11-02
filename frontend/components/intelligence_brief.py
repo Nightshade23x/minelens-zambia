@@ -274,68 +274,7 @@ def display_commodity_intelligence_brief(
         "evidence retrieved from official mining documents."
     )
 
-    # =====================================================
-    # STRUCTURED LICENSING SNAPSHOT
-    # =====================================================
-
-    with st.container(
-        border=True,
-    ):
-
-        st.markdown(
-            f"### {name}"
-        )
-
-        if (
-            name.casefold()
-            != commodity.casefold()
-        ):
-
-            st.caption(
-                f"Commodity code: {commodity}"
-            )
-
-        (
-            metric_1,
-            metric_2,
-            metric_3,
-            metric_4,
-        ) = st.columns(
-            4
-        )
-
-        with metric_1:
-
-            st.metric(
-                "Licence records",
-                f"{snapshot['records']:,}",
-            )
-
-        with metric_2:
-
-            st.metric(
-                "Approved",
-                f"{snapshot['approved']:,}",
-            )
-
-        with metric_3:
-
-            st.metric(
-                "Applicants",
-                f"{snapshot['applicants']:,}",
-            )
-
-        with metric_4:
-
-            st.metric(
-                "Provinces",
-                f"{snapshot['provinces']:,}",
-            )
-
-        st.caption(
-            "Total recorded licensing area: "
-            f"{snapshot['area']:,.2f} ha"
-        )
+    st.caption(f"Selected commodity: {name} ({commodity})")
 
     # =====================================================
     # SESSION CACHE
@@ -507,9 +446,32 @@ def display_commodity_intelligence_brief(
 
     if answer:
 
-        st.markdown(
-            answer
+        # Show an opening excerpt without generating
+        # another answer or altering citations.
+        sentences = re.split(
+            r"(?<=[.!?])\s+(?=[A-Z(])",
+            answer.strip(),
         )
+
+        preview = " ".join(sentences[:2]).strip()
+
+        if len(preview) > 700:
+            preview = sentences[0].strip()
+
+        if len(preview) > 700:
+            preview = (
+                "The full evidence-grounded analysis "
+                "is available below."
+            )
+
+        st.markdown("**At a glance**")
+        st.markdown(preview)
+
+        with st.expander(
+            "Read full policy and strategy analysis",
+            expanded=False,
+        ):
+            st.markdown(answer)
 
     else:
 

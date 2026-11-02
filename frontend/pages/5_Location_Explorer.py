@@ -533,6 +533,344 @@ st.metric(
 
 
 # =========================================================
+# LICENCE SEARCH
+# =========================================================
+
+st.divider()
+
+st.subheader(
+    "Licence records"
+)
+
+
+licence_search = st.text_input(
+    "Search licence or applicant within this location",
+    placeholder=(
+        "e.g. 42553-HQ-LML or Nisco Industries"
+    ),
+    key="location_licence_search",
+)
+
+
+if licence_search.strip():
+
+    search_value = (
+        licence_search
+        .strip()
+        .casefold()
+    )
+
+    visible_records = [
+        record
+        for record in matching_records
+        if (
+            search_value
+            in text_value(
+                record,
+                "licence_code",
+            ).casefold()
+            or
+            search_value
+            in text_value(
+                record,
+                "applicant",
+            ).casefold()
+        )
+    ]
+
+else:
+
+    visible_records = (
+        matching_records
+    )
+
+
+record_limit = st.selectbox(
+    "Records shown",
+    options=[50, 100, 250, "All"],
+    key="location_record_limit",
+)
+
+shown_records = (
+    visible_records
+    if record_limit == "All"
+    else visible_records[:record_limit]
+)
+
+licence_table = licence_dataframe(shown_records)
+
+
+st.caption(
+    f"Showing {len(shown_records):,} of "
+    f"{len(visible_records):,} matching records "
+    f"in {selected_location}."
+)
+
+if licence_search.strip():
+    st.caption(
+        "The search filters this table only; summary metrics, "
+        "map and location intelligence cover the whole location."
+    )
+
+
+# =========================================================
+# LICENCE TABLE
+# =========================================================
+
+table_event = st.dataframe(
+    licence_table,
+    use_container_width=True,
+    hide_index=True,
+    key="location_licence_results_table",
+    on_select="rerun",
+    selection_mode="single-row",
+    column_config={
+        "Licence code":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "Applicant":
+            st.column_config.TextColumn(
+                width="large",
+            ),
+
+        "Licence type":
+            st.column_config.TextColumn(
+                width="large",
+            ),
+
+        "Decision":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "Province":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "District":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "Area (ha)":
+            st.column_config.NumberColumn(
+                format="%.4f",
+            ),
+
+        "Commodities":
+            st.column_config.TextColumn(
+                width="large",
+            ),
+
+        "Source":
+            st.column_config.LinkColumn(
+                display_text="Official source",
+            ),
+    },
+)
+
+
+# =========================================================
+# SELECTED LICENCE
+# =========================================================
+
+selected_rows = (
+    table_event.selection.rows
+)
+
+selected_record = None
+
+
+if selected_rows:
+
+    selected_index = (
+        selected_rows[0]
+    )
+
+    if (
+        0
+        <= selected_index
+        < len(shown_records)
+    ):
+
+        selected_record = (
+            shown_records[
+                selected_index
+            ]
+        )
+
+
+if selected_record is not None:
+
+    st.markdown(
+        "### Selected licence"
+    )
+
+    display_licensing_record(
+        {
+            "record":
+                selected_record
+        }
+    )
+
+    source = text_value(
+        selected_record,
+        "source_url",
+    )
+
+    if source:
+
+        st.link_button(
+            "Open official licensing source",
+            source,
+        )
+
+
+    # =====================================================
+    # CROSS NAVIGATION
+    # =====================================================
+
+    st.markdown(
+        "#### Explore this record"
+    )
+
+
+    licence_code = text_value(
+        selected_record,
+        "licence_code",
+    )
+
+    applicant = text_value(
+        selected_record,
+        "applicant",
+    )
+
+    record_commodities = sorted(
+        set(
+            list_value(
+                selected_record,
+                "commodities",
+            )
+        ),
+        key=str.casefold,
+    )
+
+
+    nav_col_1, nav_col_2 = st.columns(
+        2
+    )
+
+
+    with nav_col_1:
+
+        if applicant:
+
+            if st.button(
+                "Open applicant profile",
+                use_container_width=True,
+                key=(
+                    f"location_to_applicant_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "applicant_search"
+                ] = applicant
+
+                st.switch_page(
+                    "pages/2_Applicant_Explorer.py"
+                )
+
+
+    with nav_col_2:
+
+        if record_commodities:
+
+            selected_nav_commodity = (
+                st.selectbox(
+                    "Explore commodity",
+                    options=record_commodities,
+                    key=(
+                        f"location_commodity_"
+                        f"{licence_code}"
+                    ),
+                )
+            )
+
+            if st.button(
+                "Open Commodity Explorer",
+                use_container_width=True,
+                key=(
+                    f"location_to_commodity_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "commodity_selector"
+                ] = selected_nav_commodity
+
+                st.session_state[
+                    "commodity_licence_search"
+                ] = licence_code
+
+                st.switch_page(
+                    "pages/4_Commodity_Explorer.py"
+                )
+
+
+    if licence_code:
+
+        if st.button(
+            "Open in Licensing Explorer",
+            use_container_width=True,
+            key=(
+                f"location_to_licence_"
+                f"{licence_code}"
+            ),
+        ):
+
+            st.session_state[
+                "licence_search"
+            ] = licence_code
+
+            st.switch_page(
+                "pages/1_Licensing_Explorer.py"
+            )
+
+
+# =========================================================
+# EXPORT
+# =========================================================
+
+csv_data = (
+    licence_dataframe(visible_records)
+    .to_csv(
+        index=False
+    )
+    .encode(
+        "utf-8"
+    )
+)
+
+
+st.download_button(
+    "Download location records",
+    data=csv_data,
+    file_name=(
+        "minelens_"
+        f"{selected_location.lower().replace(' ', '_')}"
+        "_licensing_records.csv"
+    ),
+    mime="text/csv",
+)
+
+
+# =========================================================
 # MAP
 # =========================================================
 
@@ -694,10 +1032,6 @@ with overview_tab:
             hide_index=True,
         )
 
-    st.markdown(
-        "#### Source province labels"
-    )
-
     if location_level == "Province":
 
         st.markdown(
@@ -775,334 +1109,3 @@ with commodities_tab:
         use_container_width=True,
         hide_index=True,
     )
-
-
-# =========================================================
-# LICENCE SEARCH
-# =========================================================
-
-st.divider()
-
-st.subheader(
-    "Licence records"
-)
-
-
-licence_search = st.text_input(
-    "Search licence or applicant within this location",
-    placeholder=(
-        "e.g. 42553-HQ-LML or Nisco Industries"
-    ),
-    key="location_licence_search",
-)
-
-
-if licence_search.strip():
-
-    search_value = (
-        licence_search
-        .strip()
-        .casefold()
-    )
-
-    visible_records = [
-        record
-        for record in matching_records
-        if (
-            search_value
-            in text_value(
-                record,
-                "licence_code",
-            ).casefold()
-            or
-            search_value
-            in text_value(
-                record,
-                "applicant",
-            ).casefold()
-        )
-    ]
-
-else:
-
-    visible_records = (
-        matching_records
-    )
-
-
-licence_table = licence_dataframe(
-    visible_records
-)
-
-
-if licence_search.strip():
-
-    st.caption(
-        f"{len(visible_records):,} matching records "
-        f"within {len(matching_records):,} "
-        f"{selected_location} records."
-    )
-
-else:
-
-    st.caption(
-        f"{len(matching_records):,} licensing records "
-        f"for {selected_location}."
-    )
-
-
-# =========================================================
-# LICENCE TABLE
-# =========================================================
-
-table_event = st.dataframe(
-    licence_table,
-    use_container_width=True,
-    hide_index=True,
-    key="location_licence_results_table",
-    on_select="rerun",
-    selection_mode="single-row",
-    column_config={
-        "Licence code":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "Applicant":
-            st.column_config.TextColumn(
-                width="large",
-            ),
-
-        "Licence type":
-            st.column_config.TextColumn(
-                width="large",
-            ),
-
-        "Decision":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "Province":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "District":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "Area (ha)":
-            st.column_config.NumberColumn(
-                format="%.4f",
-            ),
-
-        "Commodities":
-            st.column_config.TextColumn(
-                width="large",
-            ),
-
-        "Source":
-            st.column_config.LinkColumn(
-                display_text="Official source",
-            ),
-    },
-)
-
-
-# =========================================================
-# SELECTED LICENCE
-# =========================================================
-
-selected_rows = (
-    table_event.selection.rows
-)
-
-selected_record = None
-
-
-if selected_rows:
-
-    selected_index = (
-        selected_rows[0]
-    )
-
-    if (
-        0
-        <= selected_index
-        < len(visible_records)
-    ):
-
-        selected_record = (
-            visible_records[
-                selected_index
-            ]
-        )
-
-
-if selected_record is not None:
-
-    st.markdown(
-        "### Selected licence"
-    )
-
-    display_licensing_record(
-        {
-            "record":
-                selected_record
-        }
-    )
-
-    source = text_value(
-        selected_record,
-        "source_url",
-    )
-
-    if source:
-
-        st.link_button(
-            "Open official licensing source",
-            source,
-        )
-
-
-    # =====================================================
-    # CROSS NAVIGATION
-    # =====================================================
-
-    st.markdown(
-        "#### Explore this record"
-    )
-
-
-    licence_code = text_value(
-        selected_record,
-        "licence_code",
-    )
-
-    applicant = text_value(
-        selected_record,
-        "applicant",
-    )
-
-    record_commodities = sorted(
-        set(
-            list_value(
-                selected_record,
-                "commodities",
-            )
-        ),
-        key=str.casefold,
-    )
-
-
-    nav_col_1, nav_col_2 = st.columns(
-        2
-    )
-
-
-    with nav_col_1:
-
-        if applicant:
-
-            if st.button(
-                "Open applicant profile",
-                use_container_width=True,
-                key=(
-                    f"location_to_applicant_"
-                    f"{licence_code}"
-                ),
-            ):
-
-                st.session_state[
-                    "applicant_search"
-                ] = applicant
-
-                st.switch_page(
-                    "pages/2_Applicant_Explorer.py"
-                )
-
-
-    with nav_col_2:
-
-        if record_commodities:
-
-            selected_nav_commodity = (
-                st.selectbox(
-                    "Explore commodity",
-                    options=record_commodities,
-                    key=(
-                        f"location_commodity_"
-                        f"{licence_code}"
-                    ),
-                )
-            )
-
-            if st.button(
-                "Open Commodity Explorer",
-                use_container_width=True,
-                key=(
-                    f"location_to_commodity_"
-                    f"{licence_code}"
-                ),
-            ):
-
-                st.session_state[
-                    "commodity_selector"
-                ] = selected_nav_commodity
-
-                st.session_state[
-                    "commodity_licence_search"
-                ] = licence_code
-
-                st.switch_page(
-                    "pages/4_Commodity_Explorer.py"
-                )
-
-
-    if licence_code:
-
-        if st.button(
-            "Open in Licensing Explorer",
-            use_container_width=True,
-            key=(
-                f"location_to_licence_"
-                f"{licence_code}"
-            ),
-        ):
-
-            st.session_state[
-                "licence_search"
-            ] = licence_code
-
-            st.switch_page(
-                "pages/1_Licensing_Explorer.py"
-            )
-
-
-# =========================================================
-# EXPORT
-# =========================================================
-
-csv_data = (
-    licence_table
-    .to_csv(
-        index=False
-    )
-    .encode(
-        "utf-8"
-    )
-)
-
-
-st.download_button(
-    "Download location records",
-    data=csv_data,
-    file_name=(
-        "minelens_"
-        f"{selected_location.lower().replace(' ', '_')}"
-        "_licensing_records.csv"
-    ),
-    mime="text/csv",
-)

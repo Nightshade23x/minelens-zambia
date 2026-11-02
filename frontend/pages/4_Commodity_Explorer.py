@@ -589,6 +589,258 @@ st.metric(
 
 
 # =========================================================
+# LICENCE RECORDS
+# =========================================================
+
+st.divider()
+
+st.subheader(
+    "Licence records"
+)
+
+
+
+
+record_limit = st.selectbox(
+    "Records shown",
+    options=[50, 100, 250, "All"],
+    key="commodity_record_limit",
+)
+
+shown_records = (
+    visible_licence_records
+    if record_limit == "All"
+    else visible_licence_records[:record_limit]
+)
+
+licence_table = licence_dataframe(shown_records)
+
+
+st.caption(
+    f"Showing {len(shown_records):,} of "
+    f"{len(visible_licence_records):,} matching licence records "
+    f"for {selected_commodity}."
+)
+
+if licence_search.strip():
+    st.caption(
+        "The search narrows the licence table; "
+        "the summary metrics, map and intelligence "
+        "describe the selected commodity overall."
+    )
+
+
+licence_table_event = st.dataframe(
+    licence_table,
+    use_container_width=True,
+    hide_index=True,
+    key="commodity_licence_results_table",
+    on_select="rerun",
+    selection_mode="single-row",
+    column_config={
+        "Licence code":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "Applicant":
+            st.column_config.TextColumn(
+                width="large",
+            ),
+
+        "Licence type":
+            st.column_config.TextColumn(
+                width="large",
+            ),
+
+        "Decision":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "Province":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "District":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "Area (ha)":
+            st.column_config.NumberColumn(
+                format="%.4f",
+                width="medium",
+            ),
+
+        "Commodities":
+            st.column_config.TextColumn(
+                width="large",
+            ),
+
+        "Timeframe":
+            st.column_config.TextColumn(
+                width="medium",
+            ),
+
+        "Source":
+            st.column_config.LinkColumn(
+                display_text="Official source",
+                width="medium",
+            ),
+    },
+)
+
+# =========================================================
+# SELECTED LICENCE DETAILS
+# =========================================================
+
+selected_rows = (
+    licence_table_event.selection.rows
+)
+
+selected_record = None
+
+
+if selected_rows:
+
+    selected_index = selected_rows[0]
+
+    if (
+        0 <= selected_index
+        < len(shown_records)
+    ):
+
+        selected_record = (
+            shown_records[
+                selected_index
+            ]
+        )
+
+
+if selected_record is not None:
+
+    st.markdown(
+        "### Selected licence"
+    )
+
+    st.caption(
+        f"Structured licence record associated with "
+        f"{selected_commodity}."
+    )
+
+    display_licensing_record(
+        {
+            "record":
+                selected_record
+        }
+    )
+
+    source = clean_text(
+        selected_record.get(
+            "source_url"
+        )
+    )
+
+    if source:
+
+        st.link_button(
+            "Open official licensing source",
+            source,
+        )
+
+    # =====================================================
+    # CONTEXT NAVIGATION
+    # =====================================================
+
+    st.markdown(
+        "#### Explore this record"
+    )
+
+    nav_col_1, nav_col_2 = st.columns(
+        2
+    )
+
+    licence_code = clean_text(
+        selected_record.get(
+            "licence_code"
+        )
+    )
+
+    applicant = clean_text(
+        selected_record.get(
+            "applicant"
+        )
+    )
+
+    with nav_col_1:
+
+        if licence_code:
+
+            if st.button(
+                "Open in Licensing Explorer",
+                use_container_width=True,
+                key=(
+                    f"open_licensing_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "licence_search"
+                ] = licence_code
+
+                st.switch_page(
+                    "pages/1_Licensing_Explorer.py"
+                )
+
+    with nav_col_2:
+
+        if applicant:
+
+            if st.button(
+                "Open applicant profile",
+                use_container_width=True,
+                key=(
+                    f"open_applicant_"
+                    f"{licence_code}"
+                ),
+            ):
+
+                st.session_state[
+                    "applicant_search"
+                ] = applicant
+
+                st.switch_page(
+                    "pages/2_Applicant_Explorer.py"
+                )
+
+# =========================================================
+# EXPORT
+# =========================================================
+
+csv_data = (
+    licence_dataframe(visible_licence_records)
+    .to_csv(
+        index=False
+    )
+    .encode(
+        "utf-8"
+    )
+)
+
+
+st.download_button(
+    "Download commodity records",
+    data=csv_data,
+    file_name=(
+        f"minelens_{selected_commodity}_licensing_records.csv"
+    ),
+    mime="text/csv",
+)
+
+# =========================================================
 # MAP
 # =========================================================
 
@@ -745,247 +997,4 @@ st.divider()
 display_commodity_intelligence_brief(
     commodity=selected_commodity,
     records=matching_records,
-)
-# =========================================================
-# LICENCE RECORDS
-# =========================================================
-
-st.divider()
-
-st.subheader(
-    "Licence records"
-)
-
-
-
-
-licence_table = licence_dataframe(
-    visible_licence_records
-)
-
-
-if licence_search.strip():
-
-    st.caption(
-        f"{len(licence_table):,} matching records "
-        f"within {len(matching_records):,} "
-        f"{selected_commodity} licensing records."
-    )
-
-else:
-
-    st.caption(
-        f"{len(licence_table):,} records contain "
-        f"{selected_commodity}."
-    )
-
-
-licence_table_event = st.dataframe(
-    licence_table,
-    use_container_width=True,
-    hide_index=True,
-    key="commodity_licence_results_table",
-    on_select="rerun",
-    selection_mode="single-row",
-    column_config={
-        "Licence code":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "Applicant":
-            st.column_config.TextColumn(
-                width="large",
-            ),
-
-        "Licence type":
-            st.column_config.TextColumn(
-                width="large",
-            ),
-
-        "Decision":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "Province":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "District":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "Area (ha)":
-            st.column_config.NumberColumn(
-                format="%.4f",
-                width="medium",
-            ),
-
-        "Commodities":
-            st.column_config.TextColumn(
-                width="large",
-            ),
-
-        "Timeframe":
-            st.column_config.TextColumn(
-                width="medium",
-            ),
-
-        "Source":
-            st.column_config.LinkColumn(
-                display_text="Official source",
-                width="medium",
-            ),
-    },
-)
-
-# =========================================================
-# SELECTED LICENCE DETAILS
-# =========================================================
-
-selected_rows = (
-    licence_table_event.selection.rows
-)
-
-selected_record = None
-
-
-if selected_rows:
-
-    selected_index = selected_rows[0]
-
-    if (
-        0 <= selected_index
-        < len(visible_licence_records)
-    ):
-
-        selected_record = (
-            visible_licence_records[
-                selected_index
-            ]
-        )
-
-
-if selected_record is not None:
-
-    st.markdown(
-        "### Selected licence"
-    )
-
-    st.caption(
-        f"Structured licence record associated with "
-        f"{selected_commodity}."
-    )
-
-    display_licensing_record(
-        {
-            "record":
-                selected_record
-        }
-    )
-
-    source = clean_text(
-        selected_record.get(
-            "source_url"
-        )
-    )
-
-    if source:
-
-        st.link_button(
-            "Open official licensing source",
-            source,
-        )
-
-    # =====================================================
-    # CONTEXT NAVIGATION
-    # =====================================================
-
-    st.markdown(
-        "#### Explore this record"
-    )
-
-    nav_col_1, nav_col_2 = st.columns(
-        2
-    )
-
-    licence_code = clean_text(
-        selected_record.get(
-            "licence_code"
-        )
-    )
-
-    applicant = clean_text(
-        selected_record.get(
-            "applicant"
-        )
-    )
-
-    with nav_col_1:
-
-        if licence_code:
-
-            if st.button(
-                "Open in Licensing Explorer",
-                use_container_width=True,
-                key=(
-                    f"open_licensing_"
-                    f"{licence_code}"
-                ),
-            ):
-
-                st.session_state[
-                    "licence_search"
-                ] = licence_code
-
-                st.switch_page(
-                    "pages/1_Licensing_Explorer.py"
-                )
-
-    with nav_col_2:
-
-        if applicant:
-
-            if st.button(
-                "Open applicant profile",
-                use_container_width=True,
-                key=(
-                    f"open_applicant_"
-                    f"{licence_code}"
-                ),
-            ):
-
-                st.session_state[
-                    "applicant_search"
-                ] = applicant
-
-                st.switch_page(
-                    "pages/2_Applicant_Explorer.py"
-                )
-
-# =========================================================
-# EXPORT
-# =========================================================
-
-csv_data = (
-    licence_table
-    .to_csv(
-        index=False
-    )
-    .encode(
-        "utf-8"
-    )
-)
-
-
-st.download_button(
-    "Download commodity records",
-    data=csv_data,
-    file_name=(
-        f"minelens_{selected_commodity}_licensing_records.csv"
-    ),
-    mime="text/csv",
 )
