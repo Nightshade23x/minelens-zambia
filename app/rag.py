@@ -423,6 +423,16 @@ def build_user_prompt(
 
     prompt += (
         "Write the final answer now. "
+        "Answer the question directly using the evidence. "
+        "If different values apply to different categories "
+        "or scales, explain that distinction and list the "
+        "relevant supported values. "
+        "Do not claim the information is unavailable merely "
+        "because there is no single universal value. "
+        "For fees, distinguish monetary amounts from fee units "
+        "and do not mix application fees with area charges. "
+        "Do not add contradictory statements of uncertainty "
+        "when the evidence explicitly provides the answer. "
         "Use [S1], [S2], etc. immediately "
         "after the claims they support."
     )
@@ -1872,6 +1882,14 @@ def fee_query_type(
             "artisanal"
         )
 
+    elif (
+        category == "mining"
+        and "licen" in query
+        and "application" in query
+    ):
+
+        scale = "all"
+
     else:
 
         return None
@@ -2128,6 +2146,81 @@ def generate_fee_answer(
     Return a deterministic fee answer when the prescribed
     fee table can be interpreted safely.
     """
+
+    if fee_query_type(question) == ("mining", "all"):
+
+        fees = []
+
+        for scale, label in (
+            ("artisanal", "Artisanal"),
+            ("small", "Small-scale"),
+            ("large", "Large-scale"),
+        ):
+
+            specific_question = (
+                f"What is the {label.lower()} "
+                "mining licence application fee?"
+            )
+
+            item = infer_application_fee(
+                question=specific_question,
+                evidence=evidence,
+            )
+
+            if item and item.get("source_id"):
+                fees.append((label, item))
+
+        if not fees:
+            return None
+
+        if len(fees) == 3:
+            introduction = (
+                "Mining licence application fees vary "
+                "by category:"
+            )
+        else:
+            introduction = (
+                "The retrieved evidence confirms these "
+                "mining licence application fees:"
+            )
+
+        lines = []
+        citations = []
+
+        for label, item in fees:
+            source_id = item["source_id"]
+
+            lines.append(
+                f"- **{label} mining licence:** "
+                f"{item['amount']} [{source_id}]"
+            )
+
+            if source_id not in citations:
+                citations.append(source_id)
+
+        answer = (
+            introduction
+            + "\n\n"
+            + "\n".join(lines)
+        )
+
+        if len(fees) < 3:
+            answer += (
+                "\n\nOther mining licence categories "
+                "could not be verified from the "
+                "retrieved evidence."
+            )
+
+        return {
+            "answer": answer,
+            "model": None,
+            "generation_method": "deterministic-fee",
+            "citations": citations,
+            "sources": filter_sources_by_citations(
+                evidence=evidence,
+                citations=citations,
+            ),
+        }
 
     fee = infer_application_fee(
         question=question,
