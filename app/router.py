@@ -771,6 +771,23 @@ def route_query(
             ),
         }
 
+    # Employment questions need documentary evidence,
+    # not the structured facility directory.
+    if re.search(
+        r"\b(?:how many people work|"
+        r"how many people are employed|"
+        r"employment|workforce|mine workers|"
+        r"mining jobs|number of (?:mine )?workers)\b",
+        normalized,
+    ):
+        return {
+            "route": ROUTE_DOCUMENTS,
+            "reason": (
+                "The query asks about mine employment "
+                "or workforce information."
+            ),
+        }
+
     # Structured mine/facility intelligence.
     #
     # This is checked before general document intent

@@ -237,7 +237,8 @@ def test_licensing_answer_does_not_reinterpret_deadline() -> None:
 
     result = (
         generate_licensing_answer(
-            LICENSING_EVIDENCE
+            question="What is the licensing decision?",
+            evidence=LICENSING_EVIDENCE,
         )
     )
 
@@ -611,7 +612,8 @@ def test_licensing_decision_has_correct_spacing() -> None:
 
     result = (
         generate_licensing_answer(
-            LICENSING_EVIDENCE
+            question="What is the licensing decision?",
+            evidence=LICENSING_EVIDENCE,
         )
     )
 

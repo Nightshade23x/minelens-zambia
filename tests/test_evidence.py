@@ -343,21 +343,23 @@ def test_source_metadata_is_preserved() -> None:
         evidence
     )
 
-    assert sources == [
-        {
-            "source_id": "S1",
-            "title": (
-                "Mining Fees 2024"
-            ),
-            "document": (
-                "fees.pdf"
-            ),
-            "pages": "1-2",
-            "source_url": (
-                "https://example.com"
-            ),
-        }
-    ]
+    assert len(sources) == 1
+    source = sources[0]
+
+    assert source["source_id"] == "S1"
+    assert source["title"] == "Mining Fees 2024"
+    assert source["document"] == "fees.pdf"
+    assert source["pages"] == "1-2"
+    assert source["source_url"] == "https://example.com"
+
+    for key in (
+        "canonical_source_id",
+        "published_date",
+        "agency",
+        "source_authority",
+        "document_type",
+    ):
+        assert source[key] is None
 
 
 def test_unknown_route_is_rejected() -> None:
