@@ -2721,134 +2721,93 @@ def evidence_contains_phrase(
 
 def extract_critical_minerals(
     evidence: list[dict],
-) -> tuple[
-    list[str],
-    str | None,
-]:
+) -> tuple[list[str], str | None]:
     """
-    Extract supported critical-mineral names from retrieved
-    evidence.
-
-    Only canonical names that are explicitly present in the
-    evidence are returned.
+    Extract the documented critical-minerals list,
+    including continuation across nearby chunks.
     """
-
-    for item in evidence:
-
-        if (
-            item.get(
-                "evidence_type"
-            )
-            != "document"
-        ):
-
-            continue
-
-        text = clean_text(
-            item.get(
-                "text"
-            )
-        )
-
-        text_lower = (
-            text.lower()
-        )
-
-        # Make sure this really is the relevant occurrence
-        # section rather than any random mention of critical
-        # minerals.
-        section_markers = (
-            "occurrence of critical minerals",
-            "notable the critical minerals",
-            "notable critical minerals",
-        )
-
-        if not any(
-            marker in text_lower
-            for marker in section_markers
-        ):
-
-            continue
-
-        minerals: list[str] = []
-
-        checks = (
-            (
-                "Lithium",
-                (
-                    "lithium",
-                ),
-            ),
-            (
-                "Tin",
-                (
-                    "tin occurrences",
-                    "tin tin occurrences",
-                ),
-            ),
-            (
-                "Graphite",
-                (
-                    "graphite occurrences",
-                    "graphite graphite occurrences",
-                ),
-            ),
-            (
-                "Coltan (Columbite-Tantalum)",
-                (
-                    "coltan (columbite-tantalum)",
-                    "coltan",
-                ),
-            ),
-            (
-                "Rare Earth Elements (REEs)",
-                (
-                    "rare earth elements (rees)",
-                    "rare earth elements",
-                ),
-            ),
-            (
-                "Manganese",
-                (
-                    "manganese",
-                ),
-            ),
-            (
-                "Nickel",
-                (
-                    "nickel",
-                ),
-            ),
-        )
-
-        for canonical_name, phrases in checks:
-
-            if any(
-                phrase in text_lower
-                for phrase in phrases
-            ):
-
-                minerals.append(
-                    canonical_name
-                )
-
-        if minerals:
-
-            source_id = clean_text(
-                item.get(
-                    "source_id"
-                )
-            )
-
-            return (
-                minerals,
-                source_id,
-            )
-
-    return (
-        [],
-        None,
+    section_markers = (
+        "occurrence of critical minerals",
+        "notable the critical minerals",
+        "notable critical minerals",
     )
+
+    checks = (
+        ("Lithium", ("lithium",)),
+        ("Tin", ("tin occurrences", "tin tin occurrences")),
+        ("Graphite", ("graphite occurrences",)),
+        ("Coltan (Columbite-Tantalum)", ("coltan",)),
+        ("Rare Earth Elements (REEs)", ("rare earth elements",)),
+        ("Manganese", ("manganese",)),
+        ("Nickel", ("nickel",)),
+    )
+
+    best_minerals = []
+    best_source_id = None
+
+    for index, item in enumerate(evidence):
+        if item.get("evidence_type") != "document":
+            continue
+
+        text = clean_text(item.get("text"))
+        lower = text.lower()
+
+        positions = [
+            lower.find(marker)
+            for marker in section_markers
+            if marker in lower
+        ]
+
+        if not positions:
+            continue
+
+        section = text[min(positions):]
+        document = item.get("document")
+        canonical_id = item.get("canonical_source_id")
+
+        # Continue through up to two following evidence chunks
+        # only if they belong to the same document.
+        for neighbor in evidence[index + 1:index + 3]:
+            if neighbor.get("evidence_type") != "document":
+                break
+
+            if document and neighbor.get("document") != document:
+                break
+
+            if (
+                canonical_id
+                and neighbor.get("canonical_source_id") != canonical_id
+            ):
+                break
+
+            section += " " + clean_text(neighbor.get("text"))
+
+            if re.search(
+                r"2\s*\.\s*1\s*\.\s*3\s+demand",
+                section,
+                flags=re.IGNORECASE,
+            ):
+                break
+
+        # Do not extract minerals mentioned in later sections.
+        section = re.split(
+            r"2\s*\.\s*1\s*\.\s*3\s+demand",
+            section,
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0].lower()
+
+        minerals = [
+            name
+            for name, phrases in checks
+            if any(phrase in section for phrase in phrases)
+        ]
+
+        if len(minerals) > len(best_minerals):
+            best_minerals = minerals
+            best_source_id = clean_text(item.get("source_id"))
+
+    return best_minerals, best_source_id
 
 
 def format_natural_list(
