@@ -1857,6 +1857,31 @@ def search_mining_statistics(
         )
     )
 
+    # Never silently substitute a different production year.
+    import re as _re
+
+    requested_years = {
+        int(value)
+        for value in _re.findall(
+            r"\b(?:19|20)\d{2}\b", query
+        )
+    }
+
+    if requested_years:
+        returned_years = {
+            int(record["year"])
+            for record in result.get("results", [])
+            if record.get("year") is not None
+        }
+
+        if not requested_years.issubset(returned_years):
+            result["results"] = []
+            result["years"] = sorted(requested_years)
+            result["error"] = (
+                "No matching data for the explicitly requested year."
+            )
+
+
     results = result.get(
         "results",
         [],
@@ -1918,6 +1943,43 @@ def search_mining_statistics(
 # Facility search
 # ---------------------------------------------------------
 
+
+
+def _named_facility_terms(query: str) -> set[str]:
+    """Identify distinctive name words in an entity-specific query."""
+    import re
+
+    match = re.search(
+        r"^\s*(?:who\s+(?:operates|owns|runs)\s+|where\s+is\s+|"
+        r"what\s+is\s+(?:the\s+)?(?:operator|owner|ownership|"
+        r"location|status|capacity)\s+of\s+)"
+        r"(?:the\s+)?(.+?)\s*\??\s*$",
+        query,
+        flags=re.IGNORECASE,
+    )
+
+    if not match:
+        return set()
+
+    generic = {
+        "the", "and", "for", "with", "near", "located",
+        "mine", "mines", "mining", "smelter", "smelters",
+        "facility", "facilities", "plant", "refinery",
+        "copper", "gold", "zinc", "cobalt", "nickel",
+        "lead", "manganese", "iron", "silver", "uranium",
+        "zambia", "province", "which", "that", "this",
+        "from", "into", "operates", "company",
+    }
+
+    return {
+        word
+        for word in re.findall(
+            r"[a-z0-9]+", match.group(1).casefold()
+        )
+        if len(word) >= 3 and word not in generic
+    }
+
+
 def search_facilities(
     query: str,
     top_k: int = 5,
@@ -1935,6 +1997,26 @@ def search_facilities(
         load_facilities()
     )
 
+    # Entity-specific questions must match the facility name,
+    # not merely the commodity or facility type.
+    import re as _re
+
+    full_catalog_count = len(facilities)
+    name_terms = _named_facility_terms(query)
+
+    if name_terms:
+        facilities = [
+            facility
+            for facility in facilities
+            if name_terms.issubset(
+                set(_re.findall(
+                    r"[a-z0-9]+",
+                    str(facility.get("facility_name") or "").casefold(),
+                ))
+            )
+        ]
+
+
     print(
         f"Loaded {len(facilities):,} "
         "USGS facility records."
@@ -1947,6 +2029,10 @@ def search_facilities(
             top_k=top_k,
         )
     )
+
+    # Preserve the actual full dataset size in search metadata.
+    result["facility_count"] = full_catalog_count
+
 
     return {
         "route":
@@ -1999,6 +2085,26 @@ def search_exploration(
         query=query,
         top_k=top_k,
     )
+
+    # An explicit drill-hole ID must match the retrieved records.
+    import re as _re
+
+    explicit_holes = set(
+        _re.findall(r"\bKBDD\d+\b", query.upper())
+    )
+
+    if len(explicit_holes) == 1:
+        requested_hole = next(iter(explicit_holes))
+
+        result["results"] = [
+            record
+            for record in result.get("results", [])
+            if str(record.get("hole_id") or "").upper()
+            == requested_hole
+        ]
+
+        result["hole_ids"] = [requested_hole]
+
 
     return {
         "route":
