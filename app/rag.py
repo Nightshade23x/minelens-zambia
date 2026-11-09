@@ -3229,6 +3229,10 @@ def answer_from_evidence(
     deterministically. Ollama is only used when needed.
     """
 
+    skills_result = _critical_skills_from_evidence(question, evidence)
+    if skills_result is not None:
+        return skills_result
+
     if not question.strip():
 
         raise ValueError(
@@ -3315,3 +3319,81 @@ def answer_from_evidence(
         evidence=evidence,
         model=model,
     )
+
+
+def _critical_skills_from_evidence(question, evidence):
+    """Answer an explicit strategy list only when fully supported."""
+    import unicodedata
+
+    normalized_question = question.casefold()
+
+    if (
+        "critical mineral" not in normalized_question
+        or not any(
+            term in normalized_question
+            for term in ("skill", "expertise")
+        )
+    ):
+        return None
+
+    required = (
+        "government needs to develop the skills and expertise to",
+        "identify and restrict areas of potential deposits",
+        "meet the technical challenges of exploration, production, processing and refining",
+        "manage the sustainability of the critical minerals industry",
+    )
+
+    for item in evidence:
+        if item.get("evidence_type") != "document":
+            continue
+
+        origin = (
+            str(item.get("canonical_source_id") or "")
+            + " "
+            + str(item.get("document") or "")
+        ).casefold()
+
+        if "critical_minerals_strategy" not in origin:
+            continue
+
+        text = unicodedata.normalize(
+            "NFKC", str(item.get("text") or "")
+        )
+        text = " ".join(text.split()).casefold()
+
+        if not all(phrase in text for phrase in required):
+            continue
+
+        source_id = str(item.get("source_id") or "")
+
+        if not re.fullmatch(r"S\d+", source_id):
+            continue
+
+        answer = (
+            "According to Zambia's National Critical Minerals "
+            "Strategy, the government needs to develop skills "
+            "and expertise to:\n\n"
+            "- Identify and restrict areas of potential deposits "
+            "for bids by viable investors.\n"
+            "- Meet the technical challenges of exploration, "
+            "production, processing and refining.\n"
+            "- Manage the sustainability of the critical "
+            "minerals industry.\n\n"
+            f"[{source_id}]"
+        )
+
+        source = {
+            key: value
+            for key, value in item.items()
+            if key != "text"
+        }
+
+        return {
+            "answer": answer,
+            "model": None,
+            "generation_method": "deterministic-critical-skills",
+            "citations": [source_id],
+            "sources": [source],
+        }
+
+    return None

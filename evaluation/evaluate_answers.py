@@ -8,6 +8,11 @@ from typing import Any
 from app.evidence import normalize_evidence
 from app.rag import answer_from_evidence
 from app.router import search_mine
+from app.facility_answers import answer_facility_result
+from app.mining_statistics import answer_statistics_result
+from app.document_answer_selection import (
+    select_document_answer_evidence,
+)
 
 
 DEFAULT_QUESTIONS_PATH = (
@@ -251,14 +256,38 @@ def evaluate_question(
         top_k=top_k,
     )
 
-    evidence = normalize_evidence(
-        search_result=(
-            search_result
-        ),
-        max_evidence=(
-            evidence_k
-        ),
-    )
+    route = search_result.get("route")
+
+    if route in ("facilities", "mining_statistics"):
+        evidence = []
+
+    else:
+        effective_evidence_k = evidence_k
+
+        if (
+            route == "documents"
+            or search_result.get("preferred_source_ids")
+        ):
+            effective_evidence_k = max(
+                effective_evidence_k, 5
+            )
+
+        if route == "exploration":
+            effective_evidence_k = max(
+                effective_evidence_k,
+                len(search_result.get("results", [])),
+            )
+
+        evidence = normalize_evidence(
+            search_result=search_result,
+            max_evidence=effective_evidence_k,
+        )
+
+        if route == "documents":
+            evidence = select_document_answer_evidence(
+                question=question,
+                evidence=evidence,
+            )
 
     # -----------------------------------------------------
     # Answer generation
@@ -268,12 +297,22 @@ def evaluate_question(
 
     try:
 
-        answer_result = (
-            answer_from_evidence(
+        if route == "facilities":
+            answer_result = answer_facility_result(
+                query=question,
+                search_result=search_result,
+            )
+
+        elif route == "mining_statistics":
+            answer_result = answer_statistics_result(
+                search_result=search_result,
+            )
+
+        else:
+            answer_result = answer_from_evidence(
                 question=question,
                 evidence=evidence,
             )
-        )
 
     except Exception as error:
 

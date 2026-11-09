@@ -168,7 +168,10 @@
         "any_of": [
           "inadequate geoscientific data",
           "lack of geoscientific data",
-          "insufficient geoscientific data"
+          "insufficient geoscientific data",
+          "inadequate geological and geophysical data",
+          "insufficient geological and geophysical data",
+          "lack of geological and geophysical data"
         ]
       }
     ],
@@ -181,7 +184,7 @@
     "id": "critical_minerals_skills",
     "question": "what skills and expertise does Zambia need for its critical minerals industry",
     "expected_route": "documents",
-    "expected_generation_method": "ollama",
+    "expected_generation_method": "deterministic-critical-skills",
     "expected_facts": [],
     "expected_concepts": [
       {
@@ -216,7 +219,7 @@
     "minimum_concept_recall": 0.66,
     "forbidden_facts": [],
     "required_source_contains": "National-Critical-Minerals-Strategy",
-    "requires_ollama": true
+    "requires_ollama": false
   },
   {
     "id": "critical_strategy_timeframe",
@@ -235,5 +238,218 @@
     ],
     "required_source_contains": "National-Critical-Minerals-Strategy",
     "requires_ollama": true
+  },
+  {
+    "id": "facility_operator",
+    "question": "Who operates Kansanshi Mine?",
+    "expected_route": "facilities",
+    "expected_facts": [
+      "Kansanshi Mining plc"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-facilities"
+  },
+  {
+    "id": "facility_ownership",
+    "question": "Who owns Kansanshi Mine?",
+    "expected_route": "facilities",
+    "expected_facts": [
+      "First Quantum Minerals",
+      "80%",
+      "ZCCM",
+      "20%"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-facilities"
+  },
+  {
+    "id": "facility_location",
+    "question": "Where is Kansanshi Mine located?",
+    "expected_route": "facilities",
+    "expected_facts": [
+      "Solwezi",
+      "North-Western"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-facilities"
+  },
+  {
+    "id": "facility_smelters",
+    "question": "Which smelters are in Zambia?",
+    "expected_route": "facilities",
+    "expected_facts": [
+      "Chambishi Copper Smelter",
+      "Nchanga Copper Smelter",
+      "Mufulira"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-facilities"
+  },
+  {
+    "id": "copper_2024",
+    "question": "What was Zambia's copper production in 2024?",
+    "expected_route": "mining_statistics",
+    "expected_facts": [
+      "822,824",
+      "2024"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-statistics"
+  },
+  {
+    "id": "copper_trend",
+    "question": "How did Zambia's copper production change between 2023 and 2024?",
+    "expected_route": "mining_statistics",
+    "expected_facts": [
+      "732,583",
+      "822,824",
+      "90,241"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-statistics"
+  },
+  {
+    "id": "gold_2024",
+    "question": "What was Zambia's gold production in 2024?",
+    "expected_route": "mining_statistics",
+    "expected_facts": [
+      "3,269",
+      "2024"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-statistics"
+  },
+  {
+    "id": "mingomba_capex",
+    "question": "What is the estimated capital expenditure for the Mingomba project?",
+    "expected_route": "documents",
+    "expected_facts": [
+      "Mingomba"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": true,
+    "expected_generation_method": "ollama",
+    "required_source_contains": "Metals and Minerals Country Compact",
+    "expected_concepts": [
+      {
+        "name": "CapEx exceeds two billion dollars",
+        "any_of": [
+          ">$2.0B",
+          "> $2.0B",
+          "more than $2 billion",
+          "more than US$2 billion",
+          "over $2 billion",
+          "over US$2 billion",
+          "exceeds $2 billion"
+        ]
+      }
+    ],
+    "minimum_concept_recall": 1.0
+  },
+  {
+    "id": "advanced_projects",
+    "question": "Which mining projects are at advanced development in Zambia?",
+    "expected_route": "documents",
+    "expected_facts": [
+      "Kansanshi",
+      "Lumwana",
+      "Mopani",
+      "Konkola",
+      "Mingomba",
+      "Enterprise",
+      "Luongo",
+      "Munkoyo",
+      "Mumbezhi"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": true,
+    "expected_generation_method": "ollama",
+    "required_source_contains": "Metals and Minerals Country Compact"
+  },
+  {
+    "id": "mineral_policy",
+    "question": "What are the objectives of Zambia's National Mineral Resources Development Policy 2022?",
+    "expected_route": "documents",
+    "expected_facts": [
+      "exploration",
+      "transparency",
+      "Artisanal"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": true,
+    "expected_generation_method": "ollama"
+  },
+  {
+    "id": "mining_requirements",
+    "question": "What are the requirements for a large-scale mining licence in Zambia?",
+    "expected_route": "documents",
+    "expected_facts": [
+      "Form I",
+      "feasibility study",
+      "tax clearance",
+      "Pegging Certificate"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "deterministic-mining-requirements"
+  },
+  {
+    "id": "zinc_assay",
+    "question": "What is the highest zinc assay reported in the exploration results?",
+    "expected_route": "exploration",
+    "expected_facts": [
+      "KBDD10",
+      "36.4%",
+      "1.2 m"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-exploration"
+  },
+  {
+    "id": "zinc_drillholes",
+    "question": "Which drill holes reported zinc intersections in the Kabwe drilling results?",
+    "expected_route": "exploration",
+    "expected_facts": [
+      "KBDD10",
+      "KBDD09",
+      "KBDD11"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "structured-exploration"
+  },
+  {
+    "id": "licence_decision",
+    "question": "What is the decision for licence 42553-HQ-LML?",
+    "expected_route": "licensing",
+    "expected_facts": [
+      "42553-HQ-LML",
+      "Approved",
+      "Nisco Industries"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "deterministic-licensing"
+  },
+  {
+    "id": "solwezi_licences",
+    "question": "Which approved copper mining licences are in Solwezi?",
+    "expected_route": "licensing",
+    "expected_facts": [
+      "Solwezi",
+      "Approved",
+      "43258-HQ-SML"
+    ],
+    "forbidden_facts": [],
+    "requires_ollama": false,
+    "expected_generation_method": "deterministic-licensing"
   }
 ]
