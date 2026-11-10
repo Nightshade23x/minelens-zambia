@@ -814,6 +814,18 @@ def answer_facility_list(
 # MAIN ANSWER FUNCTION
 # =========================================================
 
+
+def _contextual_no_facility_message(query: str) -> str:
+    """Explain the coverage of an unsuccessful facility search."""
+    return (
+        "No matching USGS Zambia facility records were found "
+        f"for the query '{query.strip()}' in MineLens's ingested "
+        "USGS Minerals Yearbook 2024 facility dataset. "
+        "This does not establish that such facilities "
+        "do not exist outside the available records."
+    )
+
+
 def answer_facility_result(
     query: str,
     search_result: dict,
@@ -834,8 +846,7 @@ def answer_facility_result(
         return {
             "answer":
                 (
-                    "No matching USGS Zambia "
-                    "facilities were found."
+                    _contextual_no_facility_message(query)
                 ),
 
             "model":

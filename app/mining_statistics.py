@@ -1156,6 +1156,31 @@ def statistics_source(
     }
 
 
+
+def _contextual_no_statistics_message(search_result: dict) -> str:
+    """Explain unavailable production statistics precisely."""
+    commodity = search_result.get("commodity")
+    countries = search_result.get("countries") or []
+    years = search_result.get("years") or []
+
+    if commodity and countries and years:
+        country_text = ", ".join(str(c) for c in countries)
+        year_text = ", ".join(str(y) for y in years)
+
+        return (
+            f"No matching {str(commodity).lower()} statistics "
+            f"for {country_text} in {year_text} were found in "
+            "MineLens's ingested World Mining Data 2026 records. "
+            "This does not establish that the information "
+            "is unavailable from other sources."
+        )
+
+    return (
+        "No matching structured World Mining Data statistics "
+        "were found in MineLens's currently ingested records."
+    )
+
+
 def answer_statistics_result(
     search_result: dict,
 ) -> dict:
@@ -1185,9 +1210,7 @@ def answer_statistics_result(
 
         return {
             "answer": (
-                "No matching structured "
-                "World Mining Data statistics "
-                "were found for this query."
+                _contextual_no_statistics_message(search_result)
             ),
             "model": None,
             "generation_method": (

@@ -3217,6 +3217,43 @@ def display_answer(
 # Unified answer interface
 # ---------------------------------------------------------
 
+
+def _contextual_no_evidence_message(question: str) -> str:
+    """Explain missing records for recognized structured IDs."""
+    import re
+
+    licence = re.search(
+        r"\b\d{4,6}-HQ-[A-Z]{2,5}\b",
+        question.upper(),
+    )
+
+    if licence:
+        return (
+            f"No matching licence record for {licence.group()} "
+            "was found in MineLens's ingested mining licensing "
+            "dataset. This does not establish that the licence "
+            "does not exist outside those records."
+        )
+
+    hole = re.search(
+        r"\bKBDD\d+\b",
+        question.upper(),
+    )
+
+    if hole:
+        return (
+            f"No matching drill-hole record for {hole.group()} "
+            "was found in MineLens's ingested Kabwe exploration "
+            "results. This does not establish that the drill hole "
+            "does not exist outside the available records."
+        )
+
+    return (
+        "The available evidence is insufficient to answer "
+        "this question."
+    )
+
+
 def answer_from_evidence(
     question: str,
     evidence: list[dict],
@@ -3243,9 +3280,7 @@ def answer_from_evidence(
 
         return {
             "answer": (
-                "The available evidence is "
-                "insufficient to answer this "
-                "question."
+                _contextual_no_evidence_message(question)
             ),
             "model": None,
             "generation_method": (
