@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.citation_validation import validate_citation_integrity
+from app.factual_support import validate_factual_support
 from app.evidence import normalize_evidence
 from app.rag import answer_from_evidence
 from app.router import search_mine
@@ -568,6 +569,13 @@ def evaluate_question(
 
     citation_integrity = validate_citation_integrity(answer_result)
 
+    factual_support = validate_factual_support(
+        question=case["question"],
+        search_result=search_result,
+        answer_result=answer_result,
+        evidence=locals().get("evidence"),
+    )
+
     passed = all(
         (
             fact_recall == 1.0,
@@ -578,6 +586,7 @@ def evaluate_question(
             source_correct,
             citation_requirement_met,
             citation_integrity["valid"],
+            factual_support["supported"] is not False,
             no_result_correct,
             generation_error is None,
         )
@@ -688,6 +697,7 @@ def evaluate_question(
             ),
         },
         "citation_integrity": citation_integrity,
+        "factual_support": factual_support,
         "answer": answer,
     }
 
