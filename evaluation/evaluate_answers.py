@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.citation_validation import validate_citation_integrity
 from app.evidence import normalize_evidence
 from app.rag import answer_from_evidence
 from app.router import search_mine
@@ -565,6 +566,8 @@ def evaluate_question(
         else citation_present
     )
 
+    citation_integrity = validate_citation_integrity(answer_result)
+
     passed = all(
         (
             fact_recall == 1.0,
@@ -574,6 +577,7 @@ def evaluate_question(
             generation_correct,
             source_correct,
             citation_requirement_met,
+            citation_integrity["valid"],
             no_result_correct,
             generation_error is None,
         )
@@ -683,6 +687,7 @@ def evaluate_question(
                 citations
             ),
         },
+        "citation_integrity": citation_integrity,
         "answer": answer,
     }
 
