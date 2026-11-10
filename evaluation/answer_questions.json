@@ -451,5 +451,69 @@
     "forbidden_facts": [],
     "requires_ollama": false,
     "expected_generation_method": "deterministic-licensing"
+  },
+  {
+    "id": "negative_unknown_licence",
+    "question": "99999-HQ-LML",
+    "expected_route": "licensing",
+    "expected_generation_method": "no-evidence",
+    "forbidden_facts": [
+      "42553-HQ-LML"
+    ],
+    "expect_no_results": true,
+    "expected_facts": [],
+    "requires_ollama": false
+  },
+  {
+    "id": "negative_missing_year",
+    "question": "What was Zambia's copper production in 2099?",
+    "expected_route": "mining_statistics",
+    "expected_generation_method": "structured-statistics",
+    "forbidden_facts": [
+      "822,824",
+      "2024"
+    ],
+    "expect_no_results": true,
+    "expected_facts": [],
+    "requires_ollama": false
+  },
+  {
+    "id": "negative_unknown_facility",
+    "question": "Who operates the imaginary Copper Moon Mine?",
+    "expected_route": "facilities",
+    "expected_generation_method": "structured-facilities",
+    "forbidden_facts": [
+      "Konkola Copper Mines",
+      "Lubambe Copper Mine"
+    ],
+    "expect_no_results": true,
+    "expected_facts": [],
+    "requires_ollama": false
+  },
+  {
+    "id": "negative_unknown_drillhole",
+    "question": "What is the zinc assay in drill hole KBDD999?",
+    "expected_route": "exploration",
+    "expected_generation_method": "no-evidence",
+    "forbidden_facts": [
+      "KBDD10",
+      "36.4%"
+    ],
+    "expect_no_results": true,
+    "expected_facts": [],
+    "requires_ollama": false
+  },
+  {
+    "id": "negative_missing_zinc_facilities",
+    "question": "Which zinc smelters are in Zambia?",
+    "expected_route": "facilities",
+    "expected_generation_method": "structured-facilities",
+    "forbidden_facts": [
+      "Chambishi Copper Smelter",
+      "Nchanga Copper Smelter"
+    ],
+    "expect_no_results": true,
+    "expected_facts": [],
+    "requires_ollama": false
   }
 ]

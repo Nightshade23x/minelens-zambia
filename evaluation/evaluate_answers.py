@@ -528,6 +528,43 @@ def evaluate_question(
     # Overall
     # -----------------------------------------------------
 
+
+    # Missing-data answers must abstain without using unrelated sources.
+    expected_no_results = bool(
+        case.get("expect_no_results", False)
+    )
+
+    actual_no_results = not bool(
+        search_result.get("results", [])
+    )
+
+    abstained = any(
+        phrase in answer.casefold()
+        for phrase in (
+            "no matching",
+            "insufficient",
+            "not available",
+            "not found",
+            "no records",
+        )
+    )
+
+    no_result_correct = (
+        not expected_no_results
+        or (
+            actual_no_results
+            and not citations
+            and not sources
+            and abstained
+        )
+    )
+
+    citation_requirement_met = (
+        not citations
+        if expected_no_results
+        else citation_present
+    )
+
     passed = all(
         (
             fact_recall == 1.0,
@@ -536,7 +573,8 @@ def evaluate_question(
             route_correct,
             generation_correct,
             source_correct,
-            citation_present,
+            citation_requirement_met,
+            no_result_correct,
             generation_error is None,
         )
     )
