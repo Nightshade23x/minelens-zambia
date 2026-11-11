@@ -334,8 +334,8 @@
       "Mingomba"
     ],
     "forbidden_facts": [],
-    "requires_ollama": true,
-    "expected_generation_method": "ollama",
+    "requires_ollama": false,
+    "expected_generation_method": "deterministic-estimate-comparison",
     "required_source_contains": "Metals and Minerals Country Compact",
     "expected_concepts": [
       {

@@ -3254,6 +3254,91 @@ def _contextual_no_evidence_message(question: str) -> str:
     )
 
 
+
+def _mingomba_comparison_from_evidence(
+    question: str,
+    evidence: list[dict],
+) -> dict | None:
+    """Answer Mingomba CapEx comparisons using retrieved evidence."""
+
+    query = question.casefold()
+
+    if "mingomba" not in query:
+        return None
+
+    if not (
+        "capex" in query
+        or "capital expenditure" in query
+    ):
+        return None
+
+    from app.estimate_consistency import (
+        analyze_mingomba_capex,
+        draft_mingomba_comparison,
+    )
+
+    analysis = analyze_mingomba_capex(evidence)
+
+    if not analysis["requires_comparison"]:
+        return None
+
+    answer = draft_mingomba_comparison(evidence)
+
+    if not answer:
+        return None
+
+    source_ids = sorted(
+        {
+            item["source_id"]
+            for item in analysis["estimates"]
+        },
+        key=lambda value: int(value[1:]),
+    )
+
+    if len(source_ids) < 2:
+        return None
+
+    evidence_by_id = {
+        str(item.get("source_id")): item
+        for item in evidence
+    }
+
+    metadata_fields = (
+        "source_id",
+        "canonical_source_id",
+        "title",
+        "document",
+        "pages",
+        "source_url",
+        "published_date",
+        "agency",
+        "source_authority",
+        "document_type",
+    )
+
+    sources = []
+
+    for source_id in source_ids:
+        item = evidence_by_id.get(source_id)
+
+        if not item:
+            return None
+
+        sources.append({
+            field: item[field]
+            for field in metadata_fields
+            if field in item
+        })
+
+    return {
+        "answer": answer,
+        "model": None,
+        "generation_method": "deterministic-estimate-comparison",
+        "citations": source_ids,
+        "sources": sources,
+    }
+
+
 def answer_from_evidence(
     question: str,
     evidence: list[dict],
@@ -3349,6 +3434,15 @@ def answer_from_evidence(
         return (
             critical_minerals_answer
         )
+
+    comparison_answer = _mingomba_comparison_from_evidence(
+        question=question,
+        evidence=evidence,
+    )
+
+    if comparison_answer is not None:
+        return comparison_answer
+
     return generate_ollama_answer(
         question=question,
         evidence=evidence,
