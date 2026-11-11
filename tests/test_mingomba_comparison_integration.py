@@ -124,3 +124,24 @@ def test_public_answer_bypasses_ollama(monkeypatch):
         "deterministic-estimate-comparison"
     )
     assert result["citations"] == ["S1", "S2"]
+
+
+def test_expected_to_cost_wording_bypasses_ollama(monkeypatch):
+    def fail_if_called(**kwargs):
+        raise AssertionError("Ollama should not be called.")
+
+    monkeypatch.setattr(
+        rag, "generate_ollama_answer", fail_if_called
+    )
+
+    result = rag.answer_from_evidence(
+        question="How much is the Mingomba project expected to cost?",
+        evidence=EVIDENCE,
+    )
+
+    assert result["generation_method"] == (
+        "deterministic-estimate-comparison"
+    )
+    assert result["citations"] == ["S1", "S2"]
+    assert "$2 billion" in result["answer"]
+    assert ">$2.0B" in result["answer"]

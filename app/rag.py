@@ -3269,6 +3269,9 @@ def _mingomba_comparison_from_evidence(
     if not (
         "capex" in query
         or "capital expenditure" in query
+        or "expected to cost" in query
+        or "project cost" in query
+        or "construction cost" in query
     ):
         return None
 
@@ -3334,6 +3337,151 @@ def _mingomba_comparison_from_evidence(
         "answer": answer,
         "model": None,
         "generation_method": "deterministic-estimate-comparison",
+        "citations": source_ids,
+        "sources": sources,
+    }
+
+
+
+def _consistent_project_estimate_from_evidence(
+    question: str,
+    evidence: list[dict],
+) -> dict | None:
+    """Answer when multiple retrieved project estimates agree."""
+
+    from decimal import Decimal
+
+    from app.project_estimates import (
+        project_from_question,
+        analyze_project_estimates,
+    )
+
+    project = project_from_question(question)
+
+    if not project:
+        return None
+
+    analysis = analyze_project_estimates(project, evidence)
+
+    if analysis["status"] not in (
+        "consistent",
+        "qualifier_difference",
+    ):
+        return None
+
+    estimates = analysis["estimates"]
+
+    if len(estimates) < 2:
+        return None
+
+    amount = estimates[0]["amount_usd"]
+    operator = estimates[0]["operator"]
+
+    # Do not generalize inequality or conflicting estimates yet.
+    if operator not in ("reported", "~"):
+        return None
+
+    operators = {
+        item["operator"] for item in estimates
+    }
+
+    # Same nominal amount with approximate wording is acceptable.
+    # Different amounts and strict inequalities are not.
+    if not operators.issubset({"reported", "~"}):
+        return None
+
+    if any(
+        item["amount_usd"] != amount
+        for item in estimates
+    ):
+        return None
+
+    source_ids = sorted(
+        {item["source_id"] for item in estimates},
+        key=lambda value: int(value[1:]),
+    )
+
+    if len(source_ids) < 2:
+        return None
+
+    evidence_by_id = {}
+
+    for item in evidence:
+        source_id = str(item.get("source_id") or "")
+
+        if source_id in evidence_by_id:
+            return None
+
+        evidence_by_id[source_id] = item
+
+    metadata_fields = (
+        "source_id",
+        "canonical_source_id",
+        "title",
+        "document",
+        "pages",
+        "source_url",
+        "published_date",
+        "agency",
+        "source_authority",
+        "document_type",
+    )
+
+    sources = []
+
+    for source_id in source_ids:
+        item = evidence_by_id.get(source_id)
+
+        if item is None:
+            return None
+
+        sources.append({
+            field: item[field]
+            for field in metadata_fields
+            if field in item
+        })
+
+    if amount >= 1_000_000_000:
+        value = Decimal(amount) / Decimal(1_000_000_000)
+        amount_text = f"${value.normalize():f} billion"
+    else:
+        value = Decimal(amount) / Decimal(1_000_000)
+        amount_text = f"${value.normalize():f} million"
+
+    if "~" in operators:
+        amount_text = "approximately " + amount_text
+
+    citation_text = " ".join(
+        f"[{source_id}]" for source_id in source_ids
+    )
+
+    answer = (
+        "The retrieved evidence reports estimated capital "
+        f"expenditure of {amount_text} for {project} "
+        f"{citation_text}."
+    )
+
+    if analysis["distinct_documents"] == 1:
+        answer += (
+            " These are passages from the same document, "
+            "not independent confirmations."
+        )
+    else:
+        answer += (
+            " The estimates appear in different documents, "
+            "which does not by itself establish independent "
+            "verification."
+        )
+
+    answer += (
+        " The available passages do not establish a "
+        "confirmed final cost or identical project scope."
+    )
+
+    return {
+        "answer": answer,
+        "model": None,
+        "generation_method": "deterministic-project-estimate",
         "citations": source_ids,
         "sources": sources,
     }
@@ -3442,6 +3590,17 @@ def answer_from_evidence(
 
     if comparison_answer is not None:
         return comparison_answer
+
+
+    project_estimate_answer = (
+        _consistent_project_estimate_from_evidence(
+            question=question,
+            evidence=evidence,
+        )
+    )
+
+    if project_estimate_answer is not None:
+        return project_estimate_answer
 
     return generate_ollama_answer(
         question=question,
