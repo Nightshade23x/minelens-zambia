@@ -180,6 +180,95 @@ def extract_project_estimates(
                 "quoted_amount": money.group(0).strip(),
             })
 
+
+    # BACKWARD PROJECT ESTIMATES
+    # Match explicit constructions such as:
+    # "$2 billion expansion project at the Lumwana Mine".
+    backward_context = re.compile(
+        r"\s+(?:(?:expansion|development|construction|investment)"
+        r"\s+(?:project|plan|budget)|investment)"
+        r"\s+(?:at|for|of|in)\s+(?:the\s+)?$",
+        re.I,
+    )
+
+    for item in evidence:
+        if not isinstance(item, dict):
+            continue
+
+        text = str(item.get("text") or "")
+        source_id = str(item.get("source_id") or "")
+
+        if not re.fullmatch(r"S[1-9][0-9]*", source_id):
+            continue
+
+        for mention in project_pattern.finditer(text):
+            following = text[
+                mention.end():mention.end() + 16
+            ]
+
+            # Require an explicit project or mine reference.
+            if not re.match(
+                r"\s+(?:mine|project)\b",
+                following,
+                re.I,
+            ):
+                continue
+
+            left = text[
+                max(0, mention.start() - 150):
+                mention.start()
+            ]
+
+            for money in MONEY_RE.finditer(left):
+                between = left[money.end():]
+
+                if not backward_context.fullmatch(between):
+                    continue
+
+                scale = (
+                    1_000_000_000
+                    if money.group("unit").casefold().startswith("b")
+                    else 1_000_000
+                )
+
+                value = int(
+                    Decimal(money.group("amount")) * scale
+                )
+
+                operator = money.group("operator") or "reported"
+
+                pages = str(item.get("pages") or "")
+
+                key = (
+                    source_id,
+                    pages,
+                    value,
+                    operator,
+                )
+
+                if key in seen:
+                    continue
+
+                seen.add(key)
+
+                estimates.append({
+                    "project": project,
+                    "source_id": source_id,
+                    "document": str(item.get("document") or ""),
+                    "canonical_source_id": str(
+                        item.get("canonical_source_id") or ""
+                    ),
+                    "pages": pages,
+                    "amount_usd": value,
+                    "operator": operator,
+                    "qualifier": (
+                        "approximate"
+                        if operator == "~"
+                        else "unspecified"
+                    ),
+                    "quoted_amount": money.group(0).strip(),
+                })
+
     return sorted(
         estimates,
         key=lambda row: (

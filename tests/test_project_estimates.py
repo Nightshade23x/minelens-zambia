@@ -145,7 +145,15 @@ def test_does_not_attribute_mopani_investment_to_lumwana():
 
     lumwana = extract_project_estimates("Lumwana", evidence)
 
-    assert lumwana == []
+    assert len(lumwana) == 1, lumwana
+    assert lumwana[0]["amount_usd"] == 2_000_000_000
+    assert lumwana[0]["source_id"] == "S3"
+
+    # Mopani's $1.1 billion must not be assigned to Lumwana.
+    assert all(
+        item["amount_usd"] != 1_100_000_000
+        for item in lumwana
+    )
 
 
 def test_mopani_still_gets_its_own_investment():
