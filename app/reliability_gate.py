@@ -4,6 +4,7 @@ from app.answer_reliability import audit_answer_reliability
 from app.citation_validation import validate_citation_integrity
 from app.factual_support import validate_factual_support
 from app.project_estimate_support import validate_project_estimate_support
+from app.fee_support import validate_fee_support
 
 
 def assess_answer_quality(
@@ -57,6 +58,21 @@ def assess_answer_quality(
 
         if specialized.get("checked", False):
             support = specialized
+
+    # Independently verify mining application fees when
+    # earlier factual-support checks did not apply.
+    if (
+        not support.get("checked", False)
+        and support.get("supported") is None
+    ):
+        fee_support = validate_fee_support(
+            question=question,
+            evidence=evidence,
+            answer_result=answer_result,
+        )
+
+        if fee_support.get("checked", False):
+            support = fee_support
 
     reliability = audit_answer_reliability(
         question=question,
