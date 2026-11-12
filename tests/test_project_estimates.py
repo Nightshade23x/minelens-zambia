@@ -173,3 +173,51 @@ def test_mopani_still_gets_its_own_investment():
 
     assert len(mopani) == 1
     assert mopani[0]["amount_usd"] == 1_100_000_000
+
+
+def test_kansanshi_does_not_borrow_lumwana_expansion():
+    evidence = [{
+        "source_id": "S2",
+        "document": "usgs.html",
+        "pages": "1",
+        "text": (
+            "First Quantum continued to advance its "
+            "Kansanshi S3 Expansion project. "
+            "Barrick Gold completed a feasibility study "
+            "for a $2 billion expansion project at "
+            "the Lumwana Mine to double copper output."
+        ),
+    }]
+
+    kansanshi = extract_project_estimates(
+        "Kansanshi", evidence
+    )
+    lumwana = extract_project_estimates(
+        "Lumwana", evidence
+    )
+
+    assert kansanshi == []
+    assert len(lumwana) == 1
+    assert lumwana[0]["amount_usd"] == 2_000_000_000
+
+
+def test_same_sentence_kansanshi_estimate_preserved():
+    evidence = [{
+        "source_id": "S1",
+        "document": "compact.pdf",
+        "pages": "8",
+        "text": (
+            "First Quantum's Kansanshi mine "
+            "(approximately $1.25 billion CapEx), "
+            "expanding to 200,000 tonnes per year "
+            "and Barrick's Lumwana mine "
+            "(estimated at $2 billion CapEx)."
+        ),
+    }]
+
+    kansanshi = extract_project_estimates(
+        "Kansanshi", evidence
+    )
+
+    assert len(kansanshi) == 1
+    assert kansanshi[0]["amount_usd"] == 1_250_000_000

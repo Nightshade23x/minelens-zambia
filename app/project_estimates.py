@@ -81,6 +81,16 @@ def extract_project_estimates(
         for mention in project_pattern.finditer(text):
             segment = text[mention.end():mention.end() + 180]
 
+            # Do not borrow an amount from the next sentence.
+            # A different project may be discussed immediately after.
+            sentence_end = re.search(
+                r"[.!?](?=\s|$)",
+                segment,
+            )
+
+            if sentence_end is not None:
+                segment = segment[:sentence_end.start()]
+
             # Normalize approximation symbols without changing amounts.
             for character in (
                 "\u223c", "\u2248", "\u2243", "\u223d"

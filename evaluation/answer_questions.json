@@ -354,6 +354,60 @@
     "minimum_concept_recall": 1.0
   },
   {
+    "id": "lumwana_capex",
+    "question": "What is the estimated capital expenditure for Lumwana?",
+    "expected_route": "documents",
+    "expected_facts": [
+      "Lumwana",
+      "$2 billion"
+    ],
+    "forbidden_facts": [
+      "$1.1 billion",
+      "$1.25 billion"
+    ],
+    "requires_ollama": false,
+    "expected_generation_method": "deterministic-project-estimate",
+    "required_source_contains": "Metals and Minerals Country Compact",
+    "expected_concepts": [
+      {
+        "name": "Approximate two-billion-dollar investment",
+        "any_of": [
+          "approximately $2 billion",
+          "about $2 billion",
+          "roughly $2 billion"
+        ]
+      }
+    ],
+    "minimum_concept_recall": 1.0
+  },
+  {
+    "id": "kansanshi_capex",
+    "question": "What is the estimated capital expenditure for Kansanshi?",
+    "expected_route": "documents",
+    "expected_facts": [
+      "Kansanshi",
+      "$1.25 billion"
+    ],
+    "forbidden_facts": [
+      "$1.1 billion",
+      "$2 billion"
+    ],
+    "requires_ollama": false,
+    "expected_generation_method": "deterministic-project-estimate",
+    "required_source_contains": "Metals and Minerals Country Compact",
+    "expected_concepts": [
+      {
+        "name": "Approximate 1.25-billion-dollar investment",
+        "any_of": [
+          "approximately $1.25 billion",
+          "about $1.25 billion",
+          "roughly $1.25 billion"
+        ]
+      }
+    ],
+    "minimum_concept_recall": 1.0
+  },
+  {
     "id": "advanced_projects",
     "question": "Which mining projects are at advanced development in Zambia?",
     "expected_route": "documents",
