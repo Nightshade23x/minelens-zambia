@@ -1254,6 +1254,16 @@ def normalize_evidence(
             result=result,
         )
 
+        # MUSHIMA_FULL_RECORD_PRESERVE
+        if route == "exploration" and isinstance(result, dict):
+            source_row = result.get("record", result)
+            if (
+                isinstance(source_row, dict)
+                and source_row.get("project") == "Mushima North"
+                and isinstance(item, dict)
+            ):
+                item["record"] = dict(source_row)
+
         evidence.append(
             item
         )

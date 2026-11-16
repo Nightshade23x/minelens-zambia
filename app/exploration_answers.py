@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from app.exploration_search import (
     infer_exploration_intent,
@@ -687,6 +687,11 @@ def answer_exploration_result(
     Deterministically answer structured exploration
     queries from normalized evidence.
     """
+
+    from app.mushima_exploration import is_mushima_query, answer_mushima
+    if is_mushima_query(question):
+        return answer_mushima(question, evidence)
+
 
     intent = infer_exploration_intent(
         question

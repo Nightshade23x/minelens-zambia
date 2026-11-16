@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import re
@@ -307,6 +307,11 @@ def has_exploration_intent(
     drill holes, assays, grades, intervals and targets.
     """
 
+    from app.mushima_exploration import is_mushima_query
+    if is_mushima_query(query):
+        return True
+
+
     normalized = normalize_query(
         query
     )
@@ -510,6 +515,11 @@ def query_exploration(
     """
     Query structured Kabwe drilling records.
     """
+
+    from app.mushima_exploration import is_mushima_query, query_mushima
+    if is_mushima_query(query):
+        return query_mushima(query, top_k=top_k)
+
 
     if not query.strip():
         raise ValueError(
