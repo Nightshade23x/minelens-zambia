@@ -2514,140 +2514,18 @@ def evidence_source_for_groups(
     return None
 
 
-def generate_large_scale_mining_requirements_answer(
-    question: str,
-    evidence: list[dict],
-) -> dict | None:
-    """
-    Generate a deterministic large-scale mining licence
-    requirements answer from retrieved official evidence.
-    """
+def generate_large_scale_mining_requirements_answer(question: str, evidence: list[dict]) -> dict | None:
+    """Generate only appendix claims verified in Form I's large-scale section."""
+    from app.large_scale_requirements import build_large_scale_mining_requirements_answer
 
-    if not (
-        is_large_scale_mining_requirements_query(
-            question
-        )
-    ):
-
+    result = build_large_scale_mining_requirements_answer(question, evidence)
+    if result is None:
         return None
-
-
-    requirement_lines: list[
-        str
-    ] = []
-
-    citations: list[
-        str
-    ] = []
-
-
-    for (
-        requirement,
-        phrase_groups,
-    ) in LARGE_SCALE_MINING_REQUIREMENTS:
-
-        source_id = (
-            evidence_source_for_groups(
-                evidence=evidence,
-                phrase_groups=(
-                    phrase_groups
-                ),
-            )
-        )
-
-
-        if source_id is None:
-            continue
-
-
-        requirement_lines.append(
-            f"- {requirement}. "
-            f"[{source_id}]"
-        )
-
-
-        if source_id not in citations:
-
-            citations.append(
-                source_id
-            )
-
-
-    # Require substantial supporting evidence before
-    # using the deterministic answer.
-    if len(
-        requirement_lines
-    ) < 5:
-
-        return None
-
-
-    company_source = (
-        evidence_source_for_groups(
-            evidence=evidence,
-            phrase_groups=(
-                (
-                    (
-                        "shall only be made "
-                        "by a company"
-                    ),
-                ),
-            ),
-        )
+    result["sources"] = filter_sources_by_citations(
+        evidence=evidence,
+        citations=result["citations"],
     )
-
-
-    answer_parts = [
-        (
-            "The retrieved official sources list the "
-            "following requirements for a large-scale "
-            "mining licence:"
-        ),
-        "\n".join(
-            requirement_lines
-        ),
-    ]
-
-
-    if company_source:
-
-        answer_parts.append(
-            (
-                "The application form also notes that "
-                "an application for large-scale or "
-                "small-scale mining shall only be made "
-                "by a company. "
-                f"[{company_source}]"
-            )
-        )
-
-
-        if (
-            company_source
-            not in citations
-        ):
-
-            citations.append(
-                company_source
-            )
-
-
-    return {
-        "answer": "\n\n".join(
-            answer_parts
-        ),
-        "model": None,
-        "generation_method": (
-            "deterministic-mining-requirements"
-        ),
-        "citations": citations,
-        "sources": (
-            filter_sources_by_citations(
-                evidence=evidence,
-                citations=citations,
-            )
-        ),
-    }
+    return result
 # ---------------------------------------------------------
 # Ollama generation
 # ---------------------------------------------------------

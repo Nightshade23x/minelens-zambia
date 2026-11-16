@@ -5,6 +5,8 @@ from app.citation_validation import validate_citation_integrity
 from app.factual_support import validate_factual_support
 from app.project_estimate_support import validate_project_estimate_support
 from app.fee_support import validate_fee_support
+from app.critical_strategy_support import validate_critical_strategy_support
+from app.mining_requirements_support import validate_large_scale_mining_requirements_support
 
 
 def assess_answer_quality(
@@ -73,6 +75,28 @@ def assess_answer_quality(
 
         if fee_support.get("checked", False):
             support = fee_support
+
+    if (
+        not support.get("checked", False)
+        and support.get("supported") is None
+    ):
+        strategy_support = validate_critical_strategy_support(
+            question=question,
+            evidence=evidence,
+            answer_result=answer_result,
+        )
+
+        if strategy_support.get("checked", False):
+            support = strategy_support
+
+    if not support.get("checked", False) and support.get("supported") is None:
+        requirements_support = validate_large_scale_mining_requirements_support(
+            question=question,
+            evidence=evidence,
+            answer_result=answer_result,
+        )
+        if requirements_support.get("checked", False):
+            support = requirements_support
 
     reliability = audit_answer_reliability(
         question=question,
