@@ -569,5 +569,55 @@
     "expect_no_results": true,
     "expected_facts": [],
     "requires_ollama": false
+  },
+  {
+    "id": "mushima_highest_silver_interval",
+    "question": "Which Mushima North hole has the highest silver interval grade?",
+    "expected_route": "exploration",
+    "expected_generation_method": "structured-exploration",
+    "expected_facts": [
+      "26TMNRC-078",
+      "84 g/t Ag",
+      "6 m"
+    ],
+    "forbidden_facts": [
+      "26TMNRC-999"
+    ],
+    "requires_ollama": false,
+    "required_source_contains": "20261109-tm-adm-news-mushima-north-phase-4-results-and-drilling-start.pdf"
+  },
+  {
+    "id": "mushima_highest_individual_copper",
+    "question": "What was the highest individual copper assay at Mushima North?",
+    "expected_route": "exploration",
+    "expected_generation_method": "structured-exploration",
+    "expected_facts": [
+      "26TMNRC-078",
+      "1.08 % Cu",
+      "individual peak"
+    ],
+    "forbidden_facts": [
+      "26TMNRC-999"
+    ],
+    "requires_ollama": false,
+    "required_source_contains": "20261109-tm-adm-news-mushima-north-phase-4-results-and-drilling-start.pdf"
+  },
+  {
+    "id": "mushima_hole_078_intervals",
+    "question": "Show drilling results for 26TMNRC-078",
+    "expected_route": "exploration",
+    "expected_generation_method": "structured-exploration",
+    "expected_facts": [
+      "26TMNRC-078",
+      "70 m",
+      "31 g/t Ag",
+      "6 m",
+      "84 g/t Ag"
+    ],
+    "forbidden_facts": [
+      "26TMNRC-999"
+    ],
+    "requires_ollama": false,
+    "required_source_contains": "20261109-tm-adm-news-mushima-north-phase-4-results-and-drilling-start.pdf"
   }
 ]
