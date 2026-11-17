@@ -1,4 +1,4 @@
-﻿"""Query-focused selection of document evidence."""
+"""Query-focused selection of document evidence."""
 
 from difflib import SequenceMatcher
 import re
@@ -193,3 +193,21 @@ def select_document_answer_evidence(
     return renumber_evidence(
         [item for item, _ in selected]
     )
+
+
+# MINELENS_LML_SELECTION_V2
+_original_select_document_answer_evidence_lml = select_document_answer_evidence
+
+def select_document_answer_evidence(
+    question: str, evidence: list[dict]
+) -> list[dict]:
+    from app.lml_source_scope import is_lml_requirements_query, source_kinds
+    required = {
+        "form_appendices", "form_company", "lml_beginning", "lml_continuation"
+    }
+    if (
+        is_lml_requirements_query(question)
+        and required.issubset(set(source_kinds(evidence)))
+    ):
+        return evidence
+    return _original_select_document_answer_evidence_lml(question, evidence)

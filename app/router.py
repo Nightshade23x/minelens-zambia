@@ -2283,4 +2283,21 @@ def search_mine(
     ]
 
     return payload
-        
+
+
+# MINELENS_LML_SOURCE_PRIORITY_V2
+_original_search_mine_lml = search_mine
+
+def search_mine(query: str, top_k: int = 5) -> dict:
+    from app.lml_source_scope import (
+        is_lml_requirements_query,
+        prioritize_lml_search_result,
+    )
+    if not is_lml_requirements_query(query):
+        return _original_search_mine_lml(query, top_k=top_k)
+    full = _original_search_mine_lml(query, top_k=max(top_k, 15))
+    try:
+        return prioritize_lml_search_result(full, top_k)
+    except ValueError:
+        # Fail closed: retain the original search behaviour.
+        return _original_search_mine_lml(query, top_k=top_k)

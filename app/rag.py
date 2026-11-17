@@ -3563,3 +3563,14 @@ def _critical_skills_from_evidence(question, evidence):
         }
 
     return None
+
+
+# MINELENS_LML_SUPPLEMENT_V2
+_original_generate_lml_requirements = generate_large_scale_mining_requirements_answer
+
+def generate_large_scale_mining_requirements_answer(
+    question: str, evidence: list[dict]
+) -> dict | None:
+    from app.lml_source_scope import supplement_lml_answer
+    base = _original_generate_lml_requirements(question, evidence)
+    return supplement_lml_answer(question, evidence, base)
