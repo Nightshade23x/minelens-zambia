@@ -1,0 +1,219 @@
+[
+  {
+    "project": "Kansanshi",
+    "route": "documents",
+    "answer": "The retrieved evidence reports estimated capital expenditure of approximately $1.25 billion for Kansanshi [S2] [S5]. These are passages from the same document, not independent confirmations. The available passages do not establish a confirmed final cost or identical project scope.",
+    "generation_method": "deterministic-project-estimate",
+    "citations": [
+      "S2",
+      "S5"
+    ],
+    "sources": [
+      {
+        "source_id": "S2",
+        "canonical_source_id": "zambia_metals_minerals_country_compact_2026",
+        "title": "Zambia Metals and Minerals Country Compact",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "8",
+        "source_url": "",
+        "published_date": "2026-10-16",
+        "agency": "World Bank Group and Ministry of Mines and Minerals Development",
+        "source_authority": "international_official",
+        "document_type": "country_compact"
+      },
+      {
+        "source_id": "S5",
+        "canonical_source_id": "zambia_metals_minerals_country_compact_2026",
+        "title": "Zambia Metals and Minerals Country Compact",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "25-26",
+        "source_url": "",
+        "published_date": "2026-10-16",
+        "agency": "World Bank Group and Ministry of Mines and Minerals Development",
+        "source_authority": "international_official",
+        "document_type": "country_compact"
+      }
+    ],
+    "evidence": [
+      {
+        "source_id": "S1",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "10",
+        "text": "3 Country Context and Baseline Zambia represents a dual-focus opportunity, combining both an Enabling Environment Focus and an Investment Focus. The WBG ranked Zambia as a high-priority country based on six criteria: geological potential, transformative projects, government commitment, responsible sponsors, potential for value addition, and ESG focus. 3.1 Sector Overview Zambia has an impressive mineral endowment and possesses significant deposits of gold and energy transition minerals, holding approximately 2 percent of global copper reserves with some of the highest- grade copper mines in the world, alongside significant nickel, manganese, and cobalt deposits. The country is the seventh-largest copper producer globally. Major expansions and greenfield projects are poised for development, representing a combined capital expenditure exceeding $10 billion. Project proponents are established developers with high EH&S standards, well-known to the WBG, including First Quantum Minerals, Barrick Gold, KoBold Metals, and Vedanta Resources. The table below summarizes the potential contribution under both business-as-usual and unconstrained scenarios. Metric Business-as-Usual Unconstrained Difference Peak Copper Production ∼2.5 mtpa (by 2040) ∼3.0 mtpa (by 2040) +0.5 mtpa Annual Govt Revenue (mid-2040s) ∼$3.4B ∼$6.0B +$2.6B Direct Jobs (Operations) ∼106,000 >200,000 +94,000 Induced & Indirect Jobs ∼160,000 ∼300,000 +140,000 Export Revenues Sixfold increase Tenfold increase +4x additional Transport Demand (Freight) ∼2.5 mtpa ∼4.0 mtpa +1.5 mtpa Total Investment Required (by 2040)"
+      },
+      {
+        "source_id": "S2",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "8",
+        "text": "2 Declaration of Commitment The Government of Zambia expresses its strategic intent to develop its metals and minerals sector as a transformative driver of economic growth, job creation, revenue mobilization, and sustainable development. As articulated in Vision 2030, mining is a central pillar in the country’s goal to become a prosperous middle-income nation by 2030. In response to cyclical revenues and the need for economic diversification, the Government has prioritized mining and value addition as a key source of export earnings and economic resilience. Zambia’s mining sector, which produced approximately 890,000 tonnes of copper in 2025, has the potential to increase production significantly towards its target of three (3) million tonnes per year (mtpa) by 2031, with potential to drive a six- to tenfold increase in export revenues over the next decade. Major expansions are already in progress at established operations, including First Quantum’s Kansanshi mine (approximately $1.25 billion CapEx), expanding to 200,000 tonnes per year and Barrick’s Lumwana mine (estimated at $2 billion CapEx), expanding to 240,000 tonnes per year, alongside greenfield prospects like KoBold Metals’ Mingomba property (with an expected CapEx of $2 billion) to produce 300,000 tpa. Under an unconstrained (UC) scenario1, by enacting reforms and pulling policy levers to attract investment and increase production to the three (3) mtpa target, annual revenues could increase to approximately $6.0 billion, a near doubling of the sector’s current fiscal contribution. The Government recognizes that"
+      },
+      {
+        "source_id": "S3",
+        "document": "zambia_usgs_minerals_yearbook_2024.html",
+        "pages": "1",
+        "text": ". The Facilities table (formerly table 2) is a list of major mineral industry facilities (Mdala, 2025; Zambia Legal Information Institute, 2024). Commodity Review Copper and Nickel. —In 2024, First Quantum Minerals Ltd. (First Quantum) of Canada was the country's leading copper producer and owned the Enterprise, Kansanshi, and Sentinel Mines. Copper production at the Sentinel Mine was 230,792 metric tons (t) in 2024. The Kansanshi Mine produced 136,007 t of copper concentrates and 34,922 t of copper cathode. Enterprise Mine achieved commercial production status on June 1, 2024, and produced about 19,000 t of nickel by yearend. In 2024, First Quantum advanced its Kansanshi S3 Expansion project, which remained on track for completion in 2025 (First Quantum Minerals Ltd., 2025, p. 3, 14, 76). Barrick Gold Corp. of Canada produced 123,000 t of copper concentrate at the Lumwana Mine in 2024. The company also continued its $2 billion investment in a plant and mine expansion project, which was expected to increase the Lumwana Mine’s production capacity to 240,000 metric tons per year (t/yr) from its current 120,000 - t/yr capacity by 2028. The bankable feasibility study for the expansion project was completed in 2024, with the start of construction projected for 2025 (Facilities table; Barrick Gold Corp., 2025, p. 3, 32, 84)."
+      },
+      {
+        "source_id": "S4",
+        "document": "zambia_usgs_minerals_yearbook_2024.html",
+        "pages": "1",
+        "text": "developing and managing mineral resources. Zambia’s mineral production was dominated by international companies, with additional contributions from Government‑owned enterprises and artisanal miners. In 2024, Zambia’s copper and gold productions were dominated by First Quantum Minerals Ltd. of Canada, which continued to advance its Kansanshi S3 Expansion project. Barrick Gold Corp. of Canada completed a feasibility study for a $2 billion expansion project at the Lumwana Mine to double copper output by 2028. Mopani Copper Mines plc secured a \\$1.1 billion investment plan to increase production at the Nkana and Mufulira copper mines. China Nonferrous Metal Mining (Group) Co. Ltd. and its subsidiaries also contributed significant output of copper. 2024 Report Full data release with tables here ."
+      },
+      {
+        "source_id": "S5",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "25-26",
+        "text": "safer mining technologies supports the ESG improvements that are increasingly prerequisite for attracting responsible private finance. 19 Inventory of Existing Specific Development Partner Support Annex B: Mining Projects at Advanced Development Project Mineral Developer Status Est. CapEx Kansanshi Copper First Quantum Minerals Expansion to 200ktpa completed; mine life extension ∼$1.25B Lumwana Copper Barrick Gold Expansion completed to 240ktpa ∼$2.0B Mopani Copper Mopani Copper Mines Potential expansion to 200ktpa cathode by 2027 TBD Konkola Copper Vedanta Resources Reinvestment and mine life expansion after ownership dispute resolution ∼$2.5B Mingomba Copper KoBold Metals AI-driven exploration; 300ktpa production potential >$2.0B Enterprise Nickel First Quantum Minerals Greenfield nickel mine development completed ∼$100M Luongo Manganese Musama Manganese Potential expansion and processing TBD Munkoyo/Sable/Roan Copper Jubilee Metals Modular tech to treat historical waste rock; 25ktpa TBD Mumbezhi Copper Prospect Resources Greenfield prospect TBD 20 Metals and Minerals Country Compact | Republic of Zambia"
+      }
+    ]
+  },
+  {
+    "project": "Lumwana",
+    "route": "documents",
+    "answer": "The retrieved evidence reports estimated capital expenditure of approximately $2 billion for Lumwana [S2] [S4] [S5]. The estimates appear in different documents, which does not by itself establish independent verification. The available passages do not establish a confirmed final cost or identical project scope.",
+    "generation_method": "deterministic-project-estimate",
+    "citations": [
+      "S2",
+      "S4",
+      "S5"
+    ],
+    "sources": [
+      {
+        "source_id": "S2",
+        "canonical_source_id": "zambia_metals_minerals_country_compact_2026",
+        "title": "Zambia Metals and Minerals Country Compact",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "8",
+        "source_url": "",
+        "published_date": "2026-10-16",
+        "agency": "World Bank Group and Ministry of Mines and Minerals Development",
+        "source_authority": "international_official",
+        "document_type": "country_compact"
+      },
+      {
+        "source_id": "S4",
+        "canonical_source_id": "usgs_zambia_minerals_yearbook_2024",
+        "title": "Zambia Minerals Yearbook 2024",
+        "document": "zambia_usgs_minerals_yearbook_2024.html",
+        "pages": "1",
+        "source_url": "https://www.usgs.gov/centers/national-minerals-information-center/zambia",
+        "published_date": "",
+        "agency": "U.S. Geological Survey - National Minerals Information Center",
+        "source_authority": "international_official",
+        "document_type": "country_minerals_report"
+      },
+      {
+        "source_id": "S5",
+        "canonical_source_id": "zambia_metals_minerals_country_compact_2026",
+        "title": "Zambia Metals and Minerals Country Compact",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "25-26",
+        "source_url": "",
+        "published_date": "2026-10-16",
+        "agency": "World Bank Group and Ministry of Mines and Minerals Development",
+        "source_authority": "international_official",
+        "document_type": "country_compact"
+      }
+    ],
+    "evidence": [
+      {
+        "source_id": "S1",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "10",
+        "text": "3 Country Context and Baseline Zambia represents a dual-focus opportunity, combining both an Enabling Environment Focus and an Investment Focus. The WBG ranked Zambia as a high-priority country based on six criteria: geological potential, transformative projects, government commitment, responsible sponsors, potential for value addition, and ESG focus. 3.1 Sector Overview Zambia has an impressive mineral endowment and possesses significant deposits of gold and energy transition minerals, holding approximately 2 percent of global copper reserves with some of the highest- grade copper mines in the world, alongside significant nickel, manganese, and cobalt deposits. The country is the seventh-largest copper producer globally. Major expansions and greenfield projects are poised for development, representing a combined capital expenditure exceeding $10 billion. Project proponents are established developers with high EH&S standards, well-known to the WBG, including First Quantum Minerals, Barrick Gold, KoBold Metals, and Vedanta Resources. The table below summarizes the potential contribution under both business-as-usual and unconstrained scenarios. Metric Business-as-Usual Unconstrained Difference Peak Copper Production ∼2.5 mtpa (by 2040) ∼3.0 mtpa (by 2040) +0.5 mtpa Annual Govt Revenue (mid-2040s) ∼$3.4B ∼$6.0B +$2.6B Direct Jobs (Operations) ∼106,000 >200,000 +94,000 Induced & Indirect Jobs ∼160,000 ∼300,000 +140,000 Export Revenues Sixfold increase Tenfold increase +4x additional Transport Demand (Freight) ∼2.5 mtpa ∼4.0 mtpa +1.5 mtpa Total Investment Required (by 2040)"
+      },
+      {
+        "source_id": "S2",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "8",
+        "text": "2 Declaration of Commitment The Government of Zambia expresses its strategic intent to develop its metals and minerals sector as a transformative driver of economic growth, job creation, revenue mobilization, and sustainable development. As articulated in Vision 2030, mining is a central pillar in the country’s goal to become a prosperous middle-income nation by 2030. In response to cyclical revenues and the need for economic diversification, the Government has prioritized mining and value addition as a key source of export earnings and economic resilience. Zambia’s mining sector, which produced approximately 890,000 tonnes of copper in 2025, has the potential to increase production significantly towards its target of three (3) million tonnes per year (mtpa) by 2031, with potential to drive a six- to tenfold increase in export revenues over the next decade. Major expansions are already in progress at established operations, including First Quantum’s Kansanshi mine (approximately $1.25 billion CapEx), expanding to 200,000 tonnes per year and Barrick’s Lumwana mine (estimated at $2 billion CapEx), expanding to 240,000 tonnes per year, alongside greenfield prospects like KoBold Metals’ Mingomba property (with an expected CapEx of $2 billion) to produce 300,000 tpa. Under an unconstrained (UC) scenario1, by enacting reforms and pulling policy levers to attract investment and increase production to the three (3) mtpa target, annual revenues could increase to approximately $6.0 billion, a near doubling of the sector’s current fiscal contribution. The Government recognizes that"
+      },
+      {
+        "source_id": "S3",
+        "document": "zambia_usgs_minerals_yearbook_2024.html",
+        "pages": "1",
+        "text": ". The Facilities table (formerly table 2) is a list of major mineral industry facilities (Mdala, 2025; Zambia Legal Information Institute, 2024). Commodity Review Copper and Nickel. —In 2024, First Quantum Minerals Ltd. (First Quantum) of Canada was the country's leading copper producer and owned the Enterprise, Kansanshi, and Sentinel Mines. Copper production at the Sentinel Mine was 230,792 metric tons (t) in 2024. The Kansanshi Mine produced 136,007 t of copper concentrates and 34,922 t of copper cathode. Enterprise Mine achieved commercial production status on June 1, 2024, and produced about 19,000 t of nickel by yearend. In 2024, First Quantum advanced its Kansanshi S3 Expansion project, which remained on track for completion in 2025 (First Quantum Minerals Ltd., 2025, p. 3, 14, 76). Barrick Gold Corp. of Canada produced 123,000 t of copper concentrate at the Lumwana Mine in 2024. The company also continued its $2 billion investment in a plant and mine expansion project, which was expected to increase the Lumwana Mine’s production capacity to 240,000 metric tons per year (t/yr) from its current 120,000 - t/yr capacity by 2028. The bankable feasibility study for the expansion project was completed in 2024, with the start of construction projected for 2025 (Facilities table; Barrick Gold Corp., 2025, p. 3, 32, 84)."
+      },
+      {
+        "source_id": "S4",
+        "document": "zambia_usgs_minerals_yearbook_2024.html",
+        "pages": "1",
+        "text": "developing and managing mineral resources. Zambia’s mineral production was dominated by international companies, with additional contributions from Government‑owned enterprises and artisanal miners. In 2024, Zambia’s copper and gold productions were dominated by First Quantum Minerals Ltd. of Canada, which continued to advance its Kansanshi S3 Expansion project. Barrick Gold Corp. of Canada completed a feasibility study for a $2 billion expansion project at the Lumwana Mine to double copper output by 2028. Mopani Copper Mines plc secured a \\$1.1 billion investment plan to increase production at the Nkana and Mufulira copper mines. China Nonferrous Metal Mining (Group) Co. Ltd. and its subsidiaries also contributed significant output of copper. 2024 Report Full data release with tables here ."
+      },
+      {
+        "source_id": "S5",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "25-26",
+        "text": "safer mining technologies supports the ESG improvements that are increasingly prerequisite for attracting responsible private finance. 19 Inventory of Existing Specific Development Partner Support Annex B: Mining Projects at Advanced Development Project Mineral Developer Status Est. CapEx Kansanshi Copper First Quantum Minerals Expansion to 200ktpa completed; mine life extension ∼$1.25B Lumwana Copper Barrick Gold Expansion completed to 240ktpa ∼$2.0B Mopani Copper Mopani Copper Mines Potential expansion to 200ktpa cathode by 2027 TBD Konkola Copper Vedanta Resources Reinvestment and mine life expansion after ownership dispute resolution ∼$2.5B Mingomba Copper KoBold Metals AI-driven exploration; 300ktpa production potential >$2.0B Enterprise Nickel First Quantum Minerals Greenfield nickel mine development completed ∼$100M Luongo Manganese Musama Manganese Potential expansion and processing TBD Munkoyo/Sable/Roan Copper Jubilee Metals Modular tech to treat historical waste rock; 25ktpa TBD Mumbezhi Copper Prospect Resources Greenfield prospect TBD 20 Metals and Minerals Country Compact | Republic of Zambia"
+      }
+    ]
+  },
+  {
+    "project": "Mingomba",
+    "route": "documents",
+    "answer": "The available Mingomba project evidence gives different capital expenditure estimates: an expected $2 billion [S2] (page 8) and >$2.0B [S4] (page 25-26). These are different passages within the same document, not independent confirmations. The retrieved evidence does not establish which estimate is newer or a confirmed final cost.",
+    "generation_method": "deterministic-estimate-comparison",
+    "citations": [
+      "S2",
+      "S4"
+    ],
+    "sources": [
+      {
+        "source_id": "S2",
+        "canonical_source_id": "zambia_metals_minerals_country_compact_2026",
+        "title": "Zambia Metals and Minerals Country Compact",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "8",
+        "source_url": "",
+        "published_date": "2026-10-16",
+        "agency": "World Bank Group and Ministry of Mines and Minerals Development",
+        "source_authority": "international_official",
+        "document_type": "country_compact"
+      },
+      {
+        "source_id": "S4",
+        "canonical_source_id": "zambia_metals_minerals_country_compact_2026",
+        "title": "Zambia Metals and Minerals Country Compact",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "25-26",
+        "source_url": "",
+        "published_date": "2026-10-16",
+        "agency": "World Bank Group and Ministry of Mines and Minerals Development",
+        "source_authority": "international_official",
+        "document_type": "country_compact"
+      }
+    ],
+    "evidence": [
+      {
+        "source_id": "S1",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "10",
+        "text": "3 Country Context and Baseline Zambia represents a dual-focus opportunity, combining both an Enabling Environment Focus and an Investment Focus. The WBG ranked Zambia as a high-priority country based on six criteria: geological potential, transformative projects, government commitment, responsible sponsors, potential for value addition, and ESG focus. 3.1 Sector Overview Zambia has an impressive mineral endowment and possesses significant deposits of gold and energy transition minerals, holding approximately 2 percent of global copper reserves with some of the highest- grade copper mines in the world, alongside significant nickel, manganese, and cobalt deposits. The country is the seventh-largest copper producer globally. Major expansions and greenfield projects are poised for development, representing a combined capital expenditure exceeding $10 billion. Project proponents are established developers with high EH&S standards, well-known to the WBG, including First Quantum Minerals, Barrick Gold, KoBold Metals, and Vedanta Resources. The table below summarizes the potential contribution under both business-as-usual and unconstrained scenarios. Metric Business-as-Usual Unconstrained Difference Peak Copper Production ∼2.5 mtpa (by 2040) ∼3.0 mtpa (by 2040) +0.5 mtpa Annual Govt Revenue (mid-2040s) ∼$3.4B ∼$6.0B +$2.6B Direct Jobs (Operations) ∼106,000 >200,000 +94,000 Induced & Indirect Jobs ∼160,000 ∼300,000 +140,000 Export Revenues Sixfold increase Tenfold increase +4x additional Transport Demand (Freight) ∼2.5 mtpa ∼4.0 mtpa +1.5 mtpa Total Investment Required (by 2040)"
+      },
+      {
+        "source_id": "S2",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "8",
+        "text": "2 Declaration of Commitment The Government of Zambia expresses its strategic intent to develop its metals and minerals sector as a transformative driver of economic growth, job creation, revenue mobilization, and sustainable development. As articulated in Vision 2030, mining is a central pillar in the country’s goal to become a prosperous middle-income nation by 2030. In response to cyclical revenues and the need for economic diversification, the Government has prioritized mining and value addition as a key source of export earnings and economic resilience. Zambia’s mining sector, which produced approximately 890,000 tonnes of copper in 2025, has the potential to increase production significantly towards its target of three (3) million tonnes per year (mtpa) by 2031, with potential to drive a six- to tenfold increase in export revenues over the next decade. Major expansions are already in progress at established operations, including First Quantum’s Kansanshi mine (approximately $1.25 billion CapEx), expanding to 200,000 tonnes per year and Barrick’s Lumwana mine (estimated at $2 billion CapEx), expanding to 240,000 tonnes per year, alongside greenfield prospects like KoBold Metals’ Mingomba property (with an expected CapEx of $2 billion) to produce 300,000 tpa. Under an unconstrained (UC) scenario1, by enacting reforms and pulling policy levers to attract investment and increase production to the three (3) mtpa target, annual revenues could increase to approximately $6.0 billion, a near doubling of the sector’s current fiscal contribution. The Government recognizes that"
+      },
+      {
+        "source_id": "S3",
+        "document": "zambia_usgs_minerals_yearbook_2024.html",
+        "pages": "1",
+        "text": ".) Flanagan, D.M., 2025, Copper: U.S. Geological Survey Mineral Commodity Summaries 2025, p. 64–65. Flanagan, D.M., 2026, Copper: U.S. Geological Survey Mineral Commodity Summaries 2026, p. 72–73. Mdala, Harriet, 2025, Mining series—The role of the Minerals Regulation Commission in Zambia's mining sector: Lusaka, Zambia, Chambers and Partners, March 10. (Accessed December 6, 2025, at https://chambers.com/articles/mining-series-the-role-of-the-minerals-re… .) Ministry of Finance and National Planning, 2025, 2024 annual economic report: Lusaka, Zambia, Ministry of Finance and National Planning, May 16, 76 p. (Accessed January 5, 2026, via https://www.mofnp.gov.zm/?wpdmpro=2024-annual-economic-report.)&nbsp ; State House, The, 2025, Mingomba mine flagship project for Zambia, US partnership—President Hichilema: Lusaka, Zambia, The State House, Zambia, September 29. (Accessed December 6, 2025, at https://www.sh.gov.zm/mingomba-mine-flagship-project-for-zambia-us-part… .) Trade Data Monitor LLC, 2026, HS codes—74: Charleston, U.S., Trade Data Monitor LLC. (Accessed January 13, 2026, via https://www1.tdmlogin.com/tdm/default.asp ). ZCCM Investments Holdings plc, 2024, Integrated annual report—For the year ended 31 December 2023: Lusaka, Zambia, ZCCM Investments Holdings plc, June 10, 204 p. (Accessed January 6, 2026, via https://zccm-ih.financifi.com/download/integrated-annual-report/ .)"
+      },
+      {
+        "source_id": "S4",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "25-26",
+        "text": "safer mining technologies supports the ESG improvements that are increasingly prerequisite for attracting responsible private finance. 19 Inventory of Existing Specific Development Partner Support Annex B: Mining Projects at Advanced Development Project Mineral Developer Status Est. CapEx Kansanshi Copper First Quantum Minerals Expansion to 200ktpa completed; mine life extension ∼$1.25B Lumwana Copper Barrick Gold Expansion completed to 240ktpa ∼$2.0B Mopani Copper Mopani Copper Mines Potential expansion to 200ktpa cathode by 2027 TBD Konkola Copper Vedanta Resources Reinvestment and mine life expansion after ownership dispute resolution ∼$2.5B Mingomba Copper KoBold Metals AI-driven exploration; 300ktpa production potential >$2.0B Enterprise Nickel First Quantum Minerals Greenfield nickel mine development completed ∼$100M Luongo Manganese Musama Manganese Potential expansion and processing TBD Munkoyo/Sable/Roan Copper Jubilee Metals Modular tech to treat historical waste rock; 25ktpa TBD Mumbezhi Copper Prospect Resources Greenfield prospect TBD 20 Metals and Minerals Country Compact | Republic of Zambia"
+      },
+      {
+        "source_id": "S5",
+        "document": "zambia_metals_minerals_country_compact_2026.pdf",
+        "pages": "5",
+        "text": "List of Acronyms and Abbreviations Acronym Description AfCFTA African Continental Free Trade Agreement AI Artificial intelligence ASCENT Accelerating Sustainable and Clean Energy Access Transformation ASM Artisanal and Small-Scale Mining CapEx Capital expenditure COMESA Common Market for Eastern and Southern Africa CRM Critical Raw Materials EAPP Eastern Africa Power Pool EITI Extractive Industries Transparency Initiative EPF Environmental Protection Fund ESG Environmental, Social, and Governance ETM Energy Transition Minerals EU European Union FCDO Foreign, Commonwealth & Development Office FDI Foreign Direct Investment GIS Geographic Information System GISTM Global Industry Standard on Tailings Management GIZ Deutsche Gesellschaft für Internationale Zusammenarbeit (German Development Cooperation) IBRD International Bank for Reconstruction and Development IDA International Development Association IFC International Finance Corporation IPP Independent Power Producer JICA Japan International Cooperation Agency MCTI Ministry of Commerce, Trade and Industry MIGA Multilateral Investment Guarantee Agency MLSS Ministry of Labour and Social Security MMMD Ministry of Mines and Minerals Development MoFNP Ministry of Finance and National Planning MOTS Ministry of Technology and Science MPA Multiphase Programmatic Approach MRC Minerals Regulation Commission MTL Ministry of Transport and Logistics mtpa Million tonnes per annum PPP Public-Private Partnership SADC Southern African Development Community v List of Acronyms and Abbreviations"
+      }
+    ]
+  }
+]
