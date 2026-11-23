@@ -1,0 +1,2 @@
+# Optional dependency for Streamlit Research Report Generator
+reportlab>=4.0,<5
