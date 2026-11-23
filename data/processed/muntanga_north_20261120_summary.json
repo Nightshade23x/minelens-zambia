@@ -1,0 +1,38 @@
+{
+  "2026_program_muntanga_north_and_namakande_holes": 216,
+  "2026_program_muntanga_north_and_namakande_metres": 21829,
+  "cutoff_eu3o8_ppm": 100,
+  "grade_basis": "radiometric eU3O8 inferred from downhole gamma, not laboratory assay",
+  "historical_duplicate_policy": "This is the 20 Nov 2026 release only; do not merge with 16 Sep values without keys/date.",
+  "holes_in_appendix": 84,
+  "holes_since_2026_09_16": 84,
+  "holes_with_reported_intercepts": 18,
+  "holes_without_significant_intercept": 66,
+  "maximum_internal_dilution_m": 0.5,
+  "metres_since_2026_09_16": 8367,
+  "minimum_interval_m": 1,
+  "operator": "Atomic Eagle Limited",
+  "parent_project": "Muntanga Uranium Project",
+  "pdf_page_count": 22,
+  "project": "Muntanga North",
+  "reported_date": "2026-11-20",
+  "reported_intervals": 29,
+  "resource_note": "These new exploration intercepts do not constitute a mineral resource or reserve.",
+  "scope": "Appendix 1 drill collars and Appendix 2 intersections in 20 November announcement",
+  "source_id": "atomic_eagle_muntanga_north_drilling_20261120",
+  "source_sha256": "8a53b3aa9ab700a44ecd696dcff036cfe3182c58704df0c06edadca3c15202a2",
+  "source_title": "New Uranium Mineralised Zones Defined at Muntanga North",
+  "source_url": "https://newswire.iguana2.com/2fee0049d633f441/announcements/aeu.asx/6A1356079/AEU_New_Uranium_Mineralised_Zones_Defined_at_Muntanga_North.pdf",
+  "table_1_highlights": 14,
+  "target_5_zone_approx_m": {
+    "length": 1500,
+    "width": 200
+  },
+  "target_6_zone_approx_m": {
+    "average_thickness": 3,
+    "length": 800,
+    "width": 200
+  },
+  "target_note": "Target IDs only assigned to holes explicitly listed in Table 1; others left null.",
+  "true_width_note": "Lenses dip approximately 15-25 degrees; the announcement assumes intercepts are close to true width, not independently proven true widths."
+}
