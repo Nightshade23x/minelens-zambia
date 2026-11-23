@@ -1107,9 +1107,9 @@ if result_state:
         == ROUTE_EXPLORATION
     ):
 
-        display_exploration_results(
-            search_result
-        )
+        from app.exploration_result_panels import display_project_exploration_results
+        if not display_project_exploration_results(search_result, query):
+            display_exploration_results(search_result)
 
     licensing_evidence = [
         item

@@ -688,6 +688,12 @@ def answer_exploration_result(
     queries from normalized evidence.
     """
 
+    # MINELENS_MUNTANGA_20261120_INTEGRATION
+    from app.muntanga_exploration import is_muntanga_query, answer_muntanga
+    if is_muntanga_query(question):
+        return answer_muntanga(question, evidence)
+
+
     from app.mushima_exploration import is_mushima_query, answer_mushima
     if is_mushima_query(question):
         return answer_mushima(question, evidence)

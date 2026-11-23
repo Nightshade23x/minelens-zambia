@@ -1264,6 +1264,11 @@ def normalize_evidence(
             ):
                 item["record"] = dict(source_row)
 
+        # MINELENS_MUNTANGA_20261120_INTEGRATION: preserve full radiometric grade only for Muntanga rows.
+        if (route == 'exploration' and isinstance(result, dict)
+                and result.get('project') == 'Muntanga North' and isinstance(item, dict)):
+            item['record'] = dict(result)
+
         evidence.append(
             item
         )

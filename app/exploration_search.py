@@ -307,6 +307,12 @@ def has_exploration_intent(
     drill holes, assays, grades, intervals and targets.
     """
 
+    # MINELENS_MUNTANGA_20261120_INTEGRATION
+    from app.muntanga_exploration import is_muntanga_query
+    if is_muntanga_query(query):
+        return True
+
+
     from app.mushima_exploration import is_mushima_query
     if is_mushima_query(query):
         return True
@@ -515,6 +521,12 @@ def query_exploration(
     """
     Query structured Kabwe drilling records.
     """
+
+    # MINELENS_MUNTANGA_20261120_INTEGRATION
+    from app.muntanga_exploration import is_muntanga_query, query_muntanga
+    if is_muntanga_query(query):
+        return query_muntanga(query, top_k=top_k)
+
 
     from app.mushima_exploration import is_mushima_query, query_mushima
     if is_mushima_query(query):

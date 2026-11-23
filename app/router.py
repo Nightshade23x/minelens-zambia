@@ -2288,16 +2288,45 @@ def search_mine(
 # MINELENS_LML_SOURCE_PRIORITY_V2
 _original_search_mine_lml = search_mine
 
-def search_mine(query: str, top_k: int = 5) -> dict:
+def search_mine(
+    query: str,
+    top_k: int = 5,
+    candidate_k: int = DEFAULT_CANDIDATE_K,
+    include_superseded: bool = False,
+    force_route: str | None = None,
+) -> dict:
+    """Preserve original routing API and LML evidence priority."""
     from app.lml_source_scope import (
         is_lml_requirements_query,
         prioritize_lml_search_result,
     )
-    if not is_lml_requirements_query(query):
-        return _original_search_mine_lml(query, top_k=top_k)
-    full = _original_search_mine_lml(query, top_k=max(top_k, 15))
+
+    options = {
+        "query": query,
+        "candidate_k": candidate_k,
+        "include_superseded": include_superseded,
+        "force_route": force_route,
+    }
+
+    if (
+        force_route not in (None, "documents")
+        or not is_lml_requirements_query(query)
+    ):
+        return _original_search_mine_lml(
+            top_k=top_k,
+            **options,
+        )
+
+    full = _original_search_mine_lml(
+        top_k=max(top_k, 15),
+        **options,
+    )
+
     try:
         return prioritize_lml_search_result(full, top_k)
     except ValueError:
-        # Fail closed: retain the original search behaviour.
-        return _original_search_mine_lml(query, top_k=top_k)
+        return _original_search_mine_lml(
+            top_k=top_k,
+            **options,
+        )
+
