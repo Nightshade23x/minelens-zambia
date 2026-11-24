@@ -26,6 +26,16 @@ from app.exploration_dashboard_data import (
 
 st.set_page_config(page_title="MineLens | Exploration Dashboard", page_icon="⛏️", layout="wide")
 
+# MINELENS_MULTI_PROJECT_EXPLORATION_20261124
+exploration_project = st.sidebar.selectbox(
+    "Exploration project", ["Mushima North", "Muntanga North"]
+)
+if exploration_project == "Muntanga North":
+    from frontend.muntanga_exploration_view import render_muntanga_dashboard
+    render_muntanga_dashboard(PROJECT_ROOT)
+    st.stop()
+
+
 try:
     report = load_phase4_report(PROJECT_ROOT)
 except (OSError, ValueError) as exc:
