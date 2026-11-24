@@ -33,3 +33,4 @@ Thumbs.db
 # Local evaluation/debug logs
 logs/
 debug/
+scripts/enable_multi_project_exploration.py
