@@ -1,6 +1,9 @@
 """Muntanga North view for the existing multi-project Exploration Dashboard."""
 from pathlib import Path
 
+# MINELENS_MUNTANGA_COLLAR_CLICK_20261124
+from frontend.muntanga_collar_inspector import render_collar_inspector
+
 import pandas as pd
 import streamlit as st
 
@@ -82,6 +85,7 @@ def render_muntanga_dashboard(root: Path) -> None:
             st.error(str(exc))
             mapped = []
         if mapped:
+            map_event = None
             try:
                 import pydeck as pdk
             except ImportError:
@@ -92,6 +96,7 @@ def render_muntanga_dashboard(root: Path) -> None:
                 layer = pdk.Layer(
                     "ScatterplotLayer",
                     data=mapped,
+                    id="muntanga-north-collars",
                     get_position="[longitude, latitude]",
                     get_fill_color="color",
                     get_line_color=[245, 246, 249, 210],
@@ -102,13 +107,15 @@ def render_muntanga_dashboard(root: Path) -> None:
                     stroked=True,
                     pickable=True,
                 )
-                st.pydeck_chart(pdk.Deck(
+                map_event = st.pydeck_chart(pdk.Deck(
                     layers=[layer],
                     initial_view_state=pdk.ViewState(latitude=latitude, longitude=longitude, zoom=10, pitch=0),
                     tooltip={"html": "<b>{hole_id}</b><br/>Target: {target}<br/>Status: {reporting_status}<br/>{best_grade_label}<br/>Collar (WGS84): {latitude}, {longitude}", "style": {"color": "white"}},
                     map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-                ), use_container_width=True)
+                ), use_container_width=True, on_select="rerun",
+                   selection_mode="single-object", key="muntanga_north_collar_map")
             st.caption("Blue = at least one reported radiometric interval; grey = no significant intercept reported.")
+            render_collar_inspector(report, mapped, map_event)
             coordinates = pd.DataFrame([{key: value for key, value in p.items() if key != "color"} for p in mapped])
             st.download_button("Export filtered collars (CSV)", coordinates.to_csv(index=False).encode("utf-8"), "muntanga_north_20261120_collars.csv", "text/csv")
         else:
