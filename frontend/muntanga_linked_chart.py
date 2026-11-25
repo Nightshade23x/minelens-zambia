@@ -48,10 +48,15 @@ def render_linked_depth_profile(
                     scale=alt.Scale(domain=[0, profile["hole_depth_m"]], reverse=True),
                 ),
                 y2="To (m):Q",
-                color=alt.Color("eU3O8 (ppm):Q", title="ppm eU3O8"),
+                color=alt.Color(
+                    "eU3O8 (ppm):Q",
+                    title="ppm eU3O8",
+                    scale=alt.Scale(domain=[0, max(float(v) for v in frame["eU3O8 (ppm)"])]),
+                    legend=alt.Legend(format=",.0f", tickCount=4),
+                ),
                 tooltip=[
                     "Hole:N", "From (m):Q", "To (m):Q", "Length (m):Q",
-                    "eU3O8 (ppm):Q", "Source page:Q",
+                    alt.Tooltip("eU3O8 (ppm):Q", format=",.0f"), "Source page:Q",
                 ],
             )
             .properties(height=340)

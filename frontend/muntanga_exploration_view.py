@@ -98,28 +98,44 @@ def render_muntanga_dashboard(root: Path) -> None:
             else:
                 latitude = sum(p["latitude"] for p in mapped) / len(mapped)
                 longitude = sum(p["longitude"] for p in mapped) / len(mapped)
-                layer = pdk.Layer(
+                # MINELENS_MUNTANGA_MAP_POLISH_V1
+                # Transparent picking layer: the stable layer ID is kept so
+                # selected_hole_from_map_event continues to work unchanged.
+                selection_layer = pdk.Layer(
                     "ScatterplotLayer",
                     data=map_view_rows,
                     id="muntanga-north-collars",
                     get_position="[longitude, latitude]",
+                    get_fill_color=[255, 255, 255, 1],
+                    get_radius=1,
+                    radius_min_pixels=14,
+                    radius_max_pixels=14,
+                    stroked=False,
+                    pickable=True,
+                )
+                # Small visible markers; the broader hit target is behind them.
+                visual_layer = pdk.Layer(
+                    "ScatterplotLayer",
+                    data=map_view_rows,
+                    id="muntanga-north-collars-visible",
+                    get_position="[longitude, latitude]",
                     get_fill_color="color",
                     get_line_color=[245, 246, 249, 210],
                     get_radius=15,
-                    radius_min_pixels=3,
+                    radius_min_pixels=4,
                     radius_max_pixels=7,
                     line_width_min_pixels=1,
                     stroked=True,
-                    pickable=True,
+                    pickable=False,
                 )
                 map_event = st.pydeck_chart(pdk.Deck(
-                    layers=[layer],
+                    layers=[selection_layer, visual_layer],
                     initial_view_state=pdk.ViewState(latitude=latitude, longitude=longitude, zoom=10, pitch=0),
-                    tooltip={"html": "<b>{hole_id}</b><br/>Target: {target}<br/>Status: {display_status}<br/>{best_grade_label}<br/>Collar (WGS84): {coordinate_label}", "style": {"color": "white"}},
+                    tooltip={"html": "<b>{hole_id}</b><br/>{display_status}<br/>{best_grade_label}<br/><small>Click to inspect full details</small>", "style": {"color": "white", "backgroundColor": "#263341", "fontSize": "12px", "padding": "8px", "borderRadius": "6px"}},
                     map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
                 ), use_container_width=True, on_select="rerun",
                    selection_mode="single-object", key="muntanga_north_collar_map")
-            st.caption("Blue = at least one reported radiometric interval; grey = no significant intercept reported.")
+            st.caption("Click a dot to select its collar and keep the details open below. Blue = reported radiometric intervals; grey = no significant intercept reported. For crowded clusters, use the hole selector.")
             selected_collar_id = render_collar_inspector(report, mapped, map_event)
             if selected_collar_id is not None:
                 render_linked_depth_profile(report, selected_collar_id, placement="map")
@@ -152,7 +168,7 @@ def render_muntanga_dashboard(root: Path) -> None:
                     x=alt.X("hole:N", title="Drill hole", sort=sorted(frame["Hole"].unique())),
                     y=alt.Y("from_m:Q", title="Downhole depth (m)", scale=alt.Scale(reverse=True)),
                     y2="to_m:Q",
-                    color=alt.Color("grade_ppm:Q", title="ppm eU3O8"),
+                    color=alt.Color("grade_ppm:Q", title="ppm eU3O8", legend=alt.Legend(format=",.0f")),
                     tooltip=["hole:N", "from_m:Q", "to_m:Q", "length_m:Q", "grade_ppm:Q", "target:N", "page:Q"],
                 ).properties(height=390)
                 st.altair_chart(chart, use_container_width=True)

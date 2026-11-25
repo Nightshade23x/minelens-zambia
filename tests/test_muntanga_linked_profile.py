@@ -8,7 +8,6 @@ from app.muntanga_dashboard_data import MuntangaReport, SOURCE_ID
 from app.muntanga_linked_profile import (
     choose_visible_hole, depth_profile, map_hover_rows,
 )
-from scripts.enable_muntanga_linked_profile import prepare_inspector, prepare_view
 
 
 def sample_report():
@@ -100,20 +99,24 @@ def test_hover_rejects_unknown_status():
         }])
 
 
-def test_installer_prepares_current_click_to_inspect_files():
+def test_linked_profile_integrated_in_current_view():
+    # Verify the installed product, rather than a disposable installer.
     root = Path(__file__).resolve().parents[1]
     view = (root / "frontend/muntanga_exploration_view.py").read_text(encoding="utf-8")
     inspector = (root / "frontend/muntanga_collar_inspector.py").read_text(encoding="utf-8")
-    if "# MINELENS_MUNTANGA_LINKED_PROFILE_V1" in view:
-        pytest.skip("Project already has the linked profile installed")
-    out_view = prepare_view(view)
-    out_inspector = prepare_inspector(inspector)
-    assert 'selected_collar_id = render_collar_inspector' in out_view
-    assert 'render_linked_depth_profile(report, selected_collar_id, placement="intervals")' in out_view
-    assert 'data=map_view_rows,' in out_view
-    assert '    return hole_id\n' in out_inspector
+    assert "# MINELENS_MUNTANGA_LINKED_PROFILE_V1" in view
+    assert "selected_collar_id = render_collar_inspector" in view
+    assert 'render_linked_depth_profile(report, selected_collar_id, placement="map")' in view
+    assert 'render_linked_depth_profile(report, selected_collar_id, placement="intervals")' in view
+    assert "    return hole_id" in inspector
 
 
-def test_installer_refuses_unknown_view_structure():
-    with pytest.raises(ValueError, match="Click-to-inspect"):
-        prepare_view("def arbitrary_page(): pass")
+def test_installed_linked_view_and_inspector_compile():
+    import ast
+    root = Path(__file__).resolve().parents[1]
+    for name in (
+        "frontend/muntanga_exploration_view.py",
+        "frontend/muntanga_collar_inspector.py",
+    ):
+        file_path = root / name
+        ast.parse(file_path.read_text(encoding="utf-8"), filename=str(file_path))
