@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from app.muntanga_collar_detail import get_collar_profile, selected_hole_from_map_event
+from app.muntanga_linked_profile import choose_visible_hole
 from app.muntanga_dashboard_data import MuntangaReport
 
 
@@ -19,8 +20,8 @@ def render_collar_inspector(
     report: MuntangaReport,
     mapped: list[dict],
     event: object,
-) -> None:
-    """Render selected-hole profile without mutating source data or filters."""
+) -> str | None:
+    """Render source-backed details and return the current visible hole selection."""
     visible_ids = {point["hole_id"] for point in mapped}
     map_id = selected_hole_from_map_event(event, visible_ids)
     available = sorted(visible_ids)
@@ -37,7 +38,7 @@ def render_collar_inspector(
         index=0,
         key="muntanga_inspected_hole_override",
     )
-    hole_id = manually_selected if manually_selected != _CHOOSE else map_id
+    hole_id = choose_visible_hole(manually_selected, map_id, visible_ids, _CHOOSE)
     if hole_id is None:
         st.info("Select a map marker or a hole ID to see its drilling details.")
         return
@@ -95,3 +96,4 @@ def render_collar_inspector(
     )
     if details["source_url"]:
         st.markdown(f"[Open original ASX announcement]({details['source_url']})")
+    return hole_id
