@@ -177,6 +177,15 @@ if selected["claims"]:
             if url.startswith(("https://", "http://")):
                 st.markdown(f"[Open cited document]({url})")
 
+st.subheader("Research PDF")
+st.caption(
+    "Send this specific source record to the Research Report Generator. "
+    "A USGS facility stays distinct from a verified project-evidence profile."
+)
+if st.button("Create a PDF report for this record", type="primary"):
+    st.session_state["minelens_pending_profile_id"] = selected["id"]
+    st.switch_page("pages/Research_Report_Generator.py")
+
 st.subheader("Sources and exports")
 st.write(selected["source_title"])
 if selected["source_url"].startswith(("https://", "http://")):

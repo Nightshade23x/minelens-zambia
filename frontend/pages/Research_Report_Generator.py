@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
 import streamlit as st
 from app.project_comparison_data import load_comparison
 from app.research_report import generate_project_report_pdf, prepare_report
+from frontend.project_intelligence_report_ui import render_profile_report_ui
 
 try:
     from frontend.styles.theme import apply_theme
@@ -22,6 +23,21 @@ if apply_theme is not None:
     apply_theme()
 
 st.title("Mining Research Report Generator")
+# A pending explorer selection is consumed once, so report modes can be
+# switched freely afterwards without forcing a return to the profile view.
+incoming_profile = st.session_state.pop("minelens_pending_profile_id", None)
+if incoming_profile:
+    st.session_state["minelens_report_mode"] = "Single project/facility profile"
+    st.session_state["minelens_profile_report_choice"] = incoming_profile
+report_mode = st.radio(
+    "Report type",
+    ["Three-project comparison", "Single project/facility profile"],
+    key="minelens_report_mode", horizontal=True,
+)
+if report_mode == "Single project/facility profile":
+    render_profile_report_ui()
+    st.stop()
+
 st.caption("Source-cited PDFs | Kansanshi, Lumwana and Mingomba | Evidence snapshot: 19 November 2026")
 st.markdown(
     "Create a **downloadable mining project brief** from the same verified claims as "
