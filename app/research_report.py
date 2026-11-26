@@ -302,7 +302,6 @@ def generate_project_report_pdf(
     ))
     story.append(HorizontalBars(report["entries"], "capacity"))
 
-    story.append(rich("<b>Project detail and historical output</b>", "MLH1"))
     for entry in report["entries"]:
         claims = entry["capex"]
         cap = entry["capacity"]
@@ -319,10 +318,15 @@ def generate_project_report_pdf(
                                f"{hist.value}  [{entry['ids'][id(hist)]}]"])
         else:
             labels.append(["2024 source-reported output", "Not established in selected evidence"])
-        story.append(KeepTogether([
+        detail_blocks = [
             rich(f"<b>{_p(entry['name'])}</b>", "MLH2"),
             table(labels, widths=[usable * .32, usable * .68]),
-        ]))
+        ]
+        if entry is report["entries"][0]:
+            # Keep the section heading with the first detail table, not alone
+            # at the end of the chart page.
+            detail_blocks.insert(0, rich("<b>Project detail and historical output</b>", "MLH1"))
+        story.append(KeepTogether(detail_blocks))
     story.append(Spacer(1, 9))
     story.append(KeepTogether([rich(
         "<b>Comparison cautions.</b> Copper concentrates and copper cathode are different "

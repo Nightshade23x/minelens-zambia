@@ -20,6 +20,7 @@ from app.project_intelligence import (
     load_catalog,
     profile_markdown,
 )
+from frontend.project_evidence_discovery_ui import render_candidate_search
 from frontend.styles.theme import apply_theme
 
 st.set_page_config(
@@ -176,6 +177,8 @@ if selected["claims"]:
             url = c.get("source_url") or ""
             if url.startswith(("https://", "http://")):
                 st.markdown(f"[Open cited document]({url})")
+
+render_candidate_search(selected)
 
 st.subheader("Research PDF")
 st.caption(

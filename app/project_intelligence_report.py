@@ -135,12 +135,12 @@ def generate_intelligence_profile_pdf(
 
     styles = getSampleStyleSheet()
     for name, size, leading, before, after, font, color in [
-        ("MLProfileTitle", 20, 26, 0, 10, "Helvetica-Bold", NAVY),
-        ("MLProfileHeading", 12, 17, 14, 7, "Helvetica-Bold", NAVY),
-        ("MLProfileSub", 10, 15, 11, 6, "Helvetica-Bold", NAVY),
-        ("MLProfileBody", 9, 13, 0, 7, "Helvetica", INK),
-        ("MLProfileSmall", 8, 12, 0, 6, "Helvetica", INK),
-        ("MLProfileMuted", 8, 12, 0, 7, "Helvetica", MUTED),
+        ("MLProfileTitle", 20, 26, 0, 8, "Helvetica-Bold", NAVY),
+        ("MLProfileHeading", 12, 17, 11, 5, "Helvetica-Bold", NAVY),
+        ("MLProfileSub", 10, 15, 9, 5, "Helvetica-Bold", NAVY),
+        ("MLProfileBody", 9, 13, 0, 5, "Helvetica", INK),
+        ("MLProfileSmall", 8, 11, 0, 4, "Helvetica", INK),
+        ("MLProfileMuted", 8, 11, 0, 4, "Helvetica", MUTED),
     ]:
         styles.add(ParagraphStyle(
             name=name, fontName=font, fontSize=size, leading=leading,
@@ -157,7 +157,7 @@ def generate_intelligence_profile_pdf(
     buf = BytesIO()
     page_w, page_h = A4
     left = right = 19 * mm
-    bottom, top = 19 * mm, 23 * mm
+    bottom, top = 18 * mm, 21 * mm
     usable = page_w - left - right
     doc = BaseDocTemplate(
         buf, pagesize=A4, leftMargin=left, rightMargin=right,
@@ -193,8 +193,8 @@ def generate_intelligence_profile_pdf(
         tab.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), LIGHT),
             ("LINEBELOW", (0, 0), (-1, -1), .35, BORDER),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 3.5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5),
             ("LEFTPADDING", (0, 0), (-1, -1), 8),
             ("RIGHTPADDING", (0, 0), (-1, -1), 8),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
